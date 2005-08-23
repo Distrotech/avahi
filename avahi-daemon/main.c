@@ -78,10 +78,8 @@ typedef struct {
     int daemonize;
     int use_syslog;
     char *config_file;
-#ifdef HAVE_DBUS
     int enable_dbus;
     int fail_on_missing_dbus;
-#endif
     int drop_root;
     int publish_resolv_conf;
     char ** publish_dns_servers;
@@ -609,6 +607,7 @@ static int run_server(DaemonConfig *c) {
         }
 #else
         avahi_log_warn("WARNING: We are configured to enable D-BUS but it was not compiled in");
+        c->enabled_dbus = 0;
 #endif
     }
     
@@ -849,6 +848,9 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_DBUS
     config.enable_dbus = 1;
     config.fail_on_missing_dbus = 1;
+#else
+    config.enable_dbus = 0;
+    config.fail_on_missing_dbus = 0;
 #endif
     config.drop_root = 1;
     config.publish_dns_servers = NULL;

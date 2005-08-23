@@ -29,8 +29,8 @@ AM_INIT_AUTOMAKE([foreign 1.9 -Wall])
 AC_SUBST(PACKAGE_URL, [http://www.freedesktop.org/Software/Avahi])
 
 if type -p stow > /dev/null && test -d /usr/local/stow ; then
-   AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
-   ac_default_prefix="/usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION}"
+    AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
+    ac_default_prefix="/usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION}"
 fi
 
 # Checks for programs.
@@ -51,21 +51,21 @@ AC_PROG_LIBTOOL
 #
 AC_ARG_WITH(distro, AS_HELP_STRING([--with-distro=DISTRO],[Specify the Linux distribution to target: One of debian, gentoo, archlinux or none]))
 if test "z$with_distro" = "z"; then
-   #AC_CHECK_FILE(/etc/SuSE-release,with_distro="suse")
-   AC_CHECK_FILE(/etc/gentoo-release,with_distro="gentoo")
-   AC_CHECK_FILE(/etc/arch-release,with_distro="archlinux")
-   AC_CHECK_FILE(/etc/debian_version,with_distro="debian")
+    #AC_CHECK_FILE(/etc/SuSE-release,with_distro="suse")
+    AC_CHECK_FILE(/etc/gentoo-release,with_distro="gentoo")
+    AC_CHECK_FILE(/etc/arch-release,with_distro="archlinux")
+    AC_CHECK_FILE(/etc/debian_version,with_distro="debian")
 fi
 with_distro=`echo ${with_distro} | tr '[[:upper:]]' '[[:lower:]]' `
 
 if test "z$with_distro" = "z"; then
-   AC_MSG_ERROR([Linux distribution autodetection failed, you must specify the distribution to target using --with-distro=DISTRO])
-   exit 1
+    AC_MSG_ERROR([Linux distribution autodetection failed, you must specify the distribution to target using --with-distro=DISTRO])
+    exit 1
 else
 case $with_distro in
-   debian|gentoo|archlinux)
+    debian|gentoo|archlinux)
      ;;
-   *)
+    *)
      AC_MSG_ERROR([Your distribution (${with_distro}) is not yet supported, init scripts and dbus configuration will not be installed! (patches welcome)])
      ;;
 esac
@@ -77,11 +77,11 @@ AM_CONDITIONAL(TARGET_DEBIAN, test x"$with_distro" = xdebian)
 AM_CONDITIONAL(TARGET_ARCHLINUX, test x"$with_distro" = xarchlinux)
 
 test_gcc_flag() {
-   AC_LANG_CONFTEST([int main() {}])
-   $CC -c conftest.c $CFLAGS $@ > /dev/null 2> /dev/null
-   ret=$?
-   rm -f conftest.o
-   return $ret
+    AC_LANG_CONFTEST([int main() {}])
+    $CC -c conftest.c $CFLAGS $@ > /dev/null 2> /dev/null
+    ret=$?
+    rm -f conftest.o
+    return $ret
 }
 
 # If using GCC specify some additional parameters
@@ -184,8 +184,8 @@ if test "x$HAVE_GTK" = "xyes" ; then
         AC_SUBST(GLADE20_CFLAGS)
         AC_SUBST(GLADE20_LIBS)
 
-	    interfacesdir="${datadir}/${PACKAGE}/interfaces/"
-	    AC_SUBST(interfacesdir)
+        interfacesdir="${datadir}/${PACKAGE}/interfaces/"
+        AC_SUBST(interfacesdir)
 fi
 AM_CONDITIONAL(HAVE_GTK, test "x$HAVE_GTK" = "xyes")
 
@@ -202,21 +202,31 @@ AC_ARG_ENABLE(dbus,
         [HAVE_DBUS=yes]) 
 
 AC_ARG_WITH(dbus-sys, AS_HELP_STRING([--with-dbus-sys=<dir>], [where D-BUS system.d directory is]))
+AC_ARG_WITH(dbus-system-socket, AS_HELP_STRING([--with-dbus-system-address=<address>], [where the dbus system socket is, you probably want to put unix:path= at the start]))
 
 if test "x$HAVE_DBUS" = "xyes" ; then
-	AC_DEFINE(HAVE_DBUS, 1, [Whether we have D-BUS or not])
+    AC_DEFINE(HAVE_DBUS, 1, [Whether we have D-BUS or not])
 
     PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 0.30 ])
     DBUS_CFLAGS="$DBUS_CFLAGS -DDBUS_API_SUBJECT_TO_CHANGE"
     AC_SUBST(DBUS_CFLAGS)
-	AC_SUBST(DBUS_LIBS)
+    AC_SUBST(DBUS_LIBS)
 
-	if ! test -z "$with_dbus_sys" ; then
-    	   DBUS_SYS_DIR="$with_dbus_sys"
-	else
-	       DBUS_SYS_DIR="${sysconfdir}/dbus-1/system.d"
-	fi
-	AC_SUBST(DBUS_SYS_DIR)
+    if ! test -z "$with_dbus_sys" ; then
+        DBUS_SYS_DIR="$with_dbus_sys"
+    else
+        DBUS_SYS_DIR="${sysconfdir}/dbus-1/system.d"
+    fi
+    AC_SUBST(DBUS_SYS_DIR)
+
+    if ! test -z "$with_dbus_system_address" ; then
+        DBUS_SYSTEM_BUS_DEFAULT_ADDRESS="$with_dbus_system_address"
+    else
+        # Note this default path is hardcoded in D-BUS and should
+        # not use $localstatedir
+        DBUS_SYSTEM_BUS_DEFAULT_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
+    fi
+    AC_SUBST(DBUS_SYSTEM_BUS_DEFAULT_ADDRESS)
     
 fi
 AM_CONDITIONAL(HAVE_DBUS, test "x$HAVE_DBUS" = "xyes")
@@ -234,11 +244,11 @@ AC_ARG_ENABLE(expat,
         [HAVE_EXPAT=yes]) 
 
 if test "x$HAVE_EXPAT" = "xyes" ; then
-   AC_CHECK_LIB(expat, XML_ParserCreate, [ AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false) ], have_expat=false)
+    AC_CHECK_LIB(expat, XML_ParserCreate, [ AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false) ], have_expat=false)
 
-   if ! $have_expat ; then
-      AC_MSG_ERROR([*** libexpat not found ***])
-   fi
+    if ! $have_expat ; then
+        AC_MSG_ERROR([*** libexpat not found ***])
+    fi
 fi
 AM_CONDITIONAL(HAVE_EXPAT, test "x$HAVE_EXPAT" = "xyes")
 
@@ -255,9 +265,9 @@ AC_ARG_ENABLE(libdaemon,
         [HAVE_LIBDAEMON=yes]) 
 
 if test "x$HAVE_LIBDAEMON" = "xyes" ; then
-   PKG_CHECK_MODULES(LIBDAEMON, [ libdaemon >= 0.5 ])
-   AC_SUBST(LIBDAEMON_CFLAGS)
-   AC_SUBST(LIBDAEMON_LIBS)
+    PKG_CHECK_MODULES(LIBDAEMON, [ libdaemon >= 0.5 ])
+    AC_SUBST(LIBDAEMON_CFLAGS)
+    AC_SUBST(LIBDAEMON_LIBS)
 fi
 AM_CONDITIONAL(HAVE_LIBDAEMON, test "x$HAVE_LIBDAEMON" = "xyes")
 
@@ -265,17 +275,17 @@ AM_CONDITIONAL(HAVE_LIBDAEMON, test "x$HAVE_LIBDAEMON" = "xyes")
 # Python stuff
 #
 AC_ARG_ENABLE(python,
-	AS_HELP_STRING([--disable-python], [Disable scripts that depends on python]),
-	[case "${enableval}" in
-	      yes) HAVE_PYTHON=yes ;;
-	      no)  HAVE_PYTHON=no ;;
-	      *) AC_MSG_ERROR([bad value ${enableval} for --enable-python]) ;;
-	esac],[HAVE_PYTHON=yes])
+    AS_HELP_STRING([--disable-python], [Disable scripts that depends on python]),
+    [case "${enableval}" in
+          yes) HAVE_PYTHON=yes ;;
+          no)  HAVE_PYTHON=no ;;
+          *) AC_MSG_ERROR([bad value ${enableval} for --enable-python]) ;;
+    esac],[HAVE_PYTHON=yes])
 
 if test "x$HAVE_PYTHON" = "xyes" ; then
-   AM_PATH_PYTHON([2.4])
-   AM_CHECK_PYMOD(gtk,,,[AC_MSG_ERROR(Could not find Python module pygtk)])
-   AM_CHECK_PYMOD(dbus,,,[AC_MSG_ERROR(Could not find Python module dbus)])
+    AM_PATH_PYTHON([2.4])
+    AM_CHECK_PYMOD(gtk,,,[AC_MSG_ERROR(Could not find Python module pygtk)])
+    AM_CHECK_PYMOD(dbus,,,[AC_MSG_ERROR(Could not find Python module dbus)])
 fi
 AM_CONDITIONAL(HAVE_PYTHON, [test "x$HAVE_PYTHON" = "xyes" ])
 
@@ -334,16 +344,16 @@ AC_ARG_ENABLE(xmltoman,
 esac],[xmltoman=yes])
 
 if test x$xmltoman = xyes ; then
-   AC_CHECK_PROG(have_xmltoman, xmltoman, yes, no)
-
-   if test x$have_xmltoman = xno ; then
-     if ! test -e man/avahi-daemon.8 ; then
-        AC_MSG_ERROR([*** xmltoman was not found, it is required to build the manpages and they have not been pre-built])
-        exit 1
-     fi
-     AC_MSG_WARN([*** Not rebuilding man pages as xmltoman is not found ***])
-     xmltoman=no
-   fi
+    AC_CHECK_PROG(have_xmltoman, xmltoman, yes, no)
+ 
+    if test x$have_xmltoman = xno ; then
+        if ! test -e man/avahi-daemon.8 ; then
+            AC_MSG_ERROR([*** xmltoman was not found, it is required to build the manpages and they have not been pre-built])
+            exit 1
+        fi
+        AC_MSG_WARN([*** Not rebuilding man pages as xmltoman is not found ***])
+        xmltoman=no
+    fi
 fi
 
 AM_CONDITIONAL([USE_XMLTOMAN], [test "x$xmltoman" = xyes])
@@ -380,6 +390,7 @@ echo "
     sysconfdir:             ${sysconfdir}
     dbus-1 system.d dir:    ${DBUS_SYS_DIR}
     dbus-1 version:         `pkg-config dbus-1 --modversion`
+    dbus-1 system socket    ${DBUS_SYSTEM_BUS_DEFAULT_ADDRESS}
     compiler:               ${CC}
     cflags:                 ${CFLAGS}
     Enable GLIB:            ${HAVE_GLIB}
@@ -396,19 +407,19 @@ echo "
 BUILD_DAEMON="no (!)"
 
 if test "x$HAVE_EXPAT" = "xyes" -a "x$HAVE_LIBDAEMON" = "xyes" ; then
-   BUILD_DAEMON=yes
+    BUILD_DAEMON=yes
 fi
 
 BUILD_UTILS="no (!)"
 
 if test "x$BUILD_DAEMON" = "xyes" -a "x$HAVE_DBUS" = "xyes" -a "x$HAVE_PYTHON" = "xyes" ; then
-   BUILD_UTILS=yes
+    BUILD_UTILS=yes
 fi
 
 BUILD_CLIENT="no (!)"
 
 if test "x$BUILD_DAEMON" = "xyes" -a "x$HAVE_DBUS" = "xyes" ; then
-   BUILD_CLIENT=yes
+    BUILD_CLIENT=yes
 fi
 
     
