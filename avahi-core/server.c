@@ -2480,7 +2480,7 @@ uint32_t avahi_server_get_local_service_cookie(AvahiServer *s) {
 
 int avahi_server_is_service_local(AvahiServer *s, AvahiIfIndex interface, AvahiProtocol protocol, const char *name, const char *type, const char*domain) {
     AvahiKey *key = NULL;
-    char *d, *t;
+    char *d = NULL, *t = NULL;
     char ename[64], n[256];
     int ret;
     AvahiEntry *e;
