@@ -1,4 +1,6 @@
-# $Id$
+#!/usr/bin/python
+# -*-python-*-
+# $Id: $
 
 # This file is part of avahi.
 #
@@ -17,31 +19,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 
-EXTRA_DIST = __init__.py SimpleGladeApp.py ServiceTypeDatabase.py.in SimpleAvahiApp.py.in
+if __name__ == "__main__":
+    print "__main__"
 
-if HAVE_PYTHON
 
-avahidir = $(pythondir)/avahi
-
-avahi_SCRIPTS = ServiceTypeDatabase.py SimpleAvahiApp.py
-
-ServiceTypeDatabase.py: ServiceTypeDatabase.py.in
-	sed -e 's,@PYTHON\@,$(PYTHON),g' \
-		-e 's,@pkgdatadir\@,$(pkgdatadir),g' $< > $@
-	chmod +x $@
-
-SimpleAvahiApp.py: SimpleAvahiApp.py.in
-	sed -e 's,@PYTHON\@,$(PYTHON),g' \
-		-e 's,@pkgdatadir\@,$(pkgdatadir),g' $< > $@
-	chmod +x $@
-
-if HAVE_PYGTK
-if HAVE_PYTHON_DBUS
-
-avahi_PYTHON = __init__.py SimpleGladeApp.py 
-
-endif
-endif
-endif
-
-CLEANFILES=*.pyc *.pyo ServiceTypeDatabase.py SimpleAvahiApp.py
