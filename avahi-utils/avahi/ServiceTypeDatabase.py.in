@@ -55,6 +55,13 @@ class ServiceTypeDatabase:
             
         self.suffixes = tuple(map(lambda x:  "["+x+"]", self.suffixes)) + ("", )
 
+    def lookup_service_type(self, stype):
+        try:
+            return self.db[stype]
+        except KeyError:
+            return "n/a"
+
+
     def __getitem__(self, key):
 
         for suffix in self.suffixes:

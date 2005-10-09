@@ -1,0 +1,112 @@
+#!@PYTHON@
+# -*-python-*-
+# $Id$
+
+# This file is part of avahi.
+#
+# avahi is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# avahi is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+# License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with avahi; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA.
+
+import sys, getopt
+import avahi, gobject, dbus
+
+try:
+    import dbus.glib
+except ImportError, e:
+    pass
+
+class SimpleAvahiApp:
+    def __init__(self):
+        self.domain = None
+        self.service_type_browsers = {}
+        self.service_browsers = {}
+        self.bus = dbus.SystemBus()
+        self.server = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, avahi.DBUS_PATH_SERVER), avahi.DBUS_INTERFACE_SERVER)
+
+    def siocgifname(self, interface):
+         if interface <= 0:
+             return "any"
+         else:
+             return self.server.GetNetworkInterfaceNameByIndex(interface)
+
+    def BrowseDomain(self, domain, new_cb = None, remove_cb = None, interface=avahi.IF_UNSPEC, protocol=avahi.PROTO_UNSPEC):
+        db = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.DomainBrowserNew(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, domain, avahi.DOMAIN_BROWSER_BROWSE)), avahi.DBUS_INTERFACE_DOMAIN_BROWSER)
+	if new_cb != None:
+	    db.connect_to_signal('ItemNew', cb_new_domain)
+	if remove_cb != None:
+	    db.connect_to_signal('ItemRemove', cb_remove_domain)
+
+    def BrowseService(self, stype, new_cb = None, remove_cb = None, domain="local", interface=avahi.IF_UNSPEC, protocol=avahi.PROTO_UNSPEC):
+        # Are we already browsing this domain for this type? 
+        if self.service_browsers.has_key((interface, protocol, stype, domain)):
+            return
+        
+	b = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.ServiceBrowserNew(interface, protocol, stype, domain)), avahi.DBUS_INTERFACE_SERVICE_BROWSER)
+	self.service_browsers[(interface, protocol, stype, domain)] = b
+	if new_cb != None:
+	    b.connect_to_signal('ItemNew', new_cb)
+	if remove_cb != None:
+	    b.connect_to_signal('ItemRemove', remove_cb)
+
+    def ResolveService(self, name, stype, resolved_cb, error_cb = None, domain="local", interface=avahi.IF_UNSPEC, protocol=avahi.PROTO_UNSPEC):
+	self.server.ResolveService(interface, protocol, name, stype, domain, avahi.PROTO_UNSPEC, reply_handler=resolved_cb, error_handler=error_cb)
+
+    def BrowseServiceType(self, new_cb = None, remove_cb = None, domain="local", interface=avahi.IF_UNSPEC, protocol=avahi.PROTO_UNSPEC):
+        if self.service_type_browsers.has_key((interface, protocol, domain)):
+            return
+        
+	b = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.ServiceTypeBrowserNew(interface, protocol, domain)), avahi.DBUS_INTERFACE_SERVICE_TYPE_BROWSER)
+	b.connect_to_signal('ItemNew', self.new_service_type)
+	if new_cb != None:
+	    b.connect_to_signal('ItemNew', new_cb)
+	if remove_cb != None:
+	    b.connect_to_signal('ItemRemove', remove_cb)
+            
+	self.service_type_browsers[(interface, protocol, domain)] = b
+ 
+
+if __name__ == "__main__":
+    print "__main__"
+
+    class AvahiBrowse:
+	def new_domain(self, interface, protocol, domain):
+	    print "%i %i %s" % (interface, protocol, domain)
+
+	def service_resolved(self, interface, protocol, name, stype, domain, host, aprotocol, address, port, txt):
+	    print "Service data for service '%s' of type '%s' (%s) in domain '%s' on %i.%i:" % (name, stype, stype, domain, interface, protocol)
+	    print "\tHost %s (%s), port %i, TXT data: %s" % (host, address, port, avahi.txt_array_to_string_array(txt))
+
+	def print_error(self, err):
+	    print "Error:", str(err)
+	    
+	def new_service(self, interface, protocol, name, stype, domain):
+	    print "Found service '%s' of type '%s' (%s) in domain '%s' on %i.%i." % (name, stype, stype, domain, interface, protocol)
+	    self.sb.ResolveService(name, stype, self.service_resolved, self.print_error)
+
+	def remove_service(self, interface, protocol, name, stype, domain):
+	    print "Service '%s' of type '%s' (%s) in domain '%s' on %i.%i disappeared." % (name, stype, stype, domain, interface, protocol)
+
+	def __init__(self):
+	    self.sb = SimpleAvahiApp()
+#	    self.sb.BrowseService("_ssh._tcp", self.new_service)
+	    self.sb.BrowseService("_workstation._tcp", self.new_service, self.remove_service)
+	    
+    ab = AvahiBrowse()
+
+    try:
+        gobject.MainLoop().run()
+    except KeyboardInterrupt, k:
+        pass
+
