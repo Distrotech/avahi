@@ -75,7 +75,24 @@ class SimpleAvahiApp:
 	    b.connect_to_signal('ItemRemove', remove_cb)
             
 	self.service_type_browsers[(interface, protocol, domain)] = b
- 
+
+    def PublishEGNew(self, entry_group_state_changed_cb = None):
+        group = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.EntryGroupNew()), avahi.DBUS_INTERFACE_ENTRY_GROUP)
+        if not entry_group_state_changed_cb is None:
+            group.connect_to_signal('StateChanged', entry_group_state_changed_cb)
+        return group
+
+    def PublishEGAddService(self, group, name, stype, port, txts={"a":"b"}, host = "", domain="local", interface=avahi.IF_UNSPEC, protocol=avahi.PROTO_UNSPEC):
+        
+        group.AddService(interface, protocol, name, stype, domain, host, dbus.UInt16(port), avahi.dict_to_txt_array(txts))
+
+    def PublishEGRemove(self, group):
+        if not group is None:
+            group.Reset()
+
+    def PublishEGCommit(self, group):
+        if not group is None:
+            group.Commit()
 
 if __name__ == "__main__":
     print "__main__"
@@ -100,10 +117,19 @@ if __name__ == "__main__":
 
 	def __init__(self):
 	    self.sb = SimpleAvahiApp()
-#	    self.sb.BrowseService("_ssh._tcp", self.new_service)
-	    self.sb.BrowseService("_workstation._tcp", self.new_service, self.remove_service)
-	    
+	    self.sb.BrowseService("_ssh._tcp", self.new_service)
+#	    self.sb.BrowseService("_workstation._tcp", self.new_service, self.remove_service)
+
+    class AvahiPublish:
+        def  __init__(self):
+            self.sp = SimpleAvahiApp()
+            group = self.sp.PublishEGNew()
+            self.sp.PublishEGAddService(group, "coucou", "_ssh._tcp", 22)
+            self.sp.PublishEGAddService(group, "coucou", "_http._tcp", 80)
+            self.sp.PublishEGCommit(group)
+    
     ab = AvahiBrowse()
+    ap = AvahiPublish()
 
     try:
         gobject.MainLoop().run()
