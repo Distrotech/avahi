@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <sys/types.h>
 #include <netinet/in.h>
 
 #include <avahi-common/defs.h>
@@ -332,9 +333,11 @@ static int consume_labels(AvahiDnsPacket *p, unsigned idx, char *ret_name, size_
     int ret = 0;
     int compressed = 0;
     int first_label = 1;
+    unsigned label_ptr;
+    int i;
     assert(p && ret_name && l);
     
-    for (;;) {
+    for (i = 0; i < AVAHI_DNS_LABELS_MAX; i++) {
         uint8_t n;
 
         if (idx+1 > p->size)
@@ -384,7 +387,12 @@ static int consume_labels(AvahiDnsPacket *p, unsigned idx, char *ret_name, size_
             if (idx+2 > p->size)
                 return -1;
 
-            idx = ((unsigned) (AVAHI_DNS_PACKET_DATA(p)[idx] & ~0xC0)) << 8 | AVAHI_DNS_PACKET_DATA(p)[idx+1];
+            label_ptr = ((unsigned) (AVAHI_DNS_PACKET_DATA(p)[idx] & ~0xC0)) << 8 | AVAHI_DNS_PACKET_DATA(p)[idx+1];
+
+            if ((label_ptr < AVAHI_DNS_PACKET_HEADER_SIZE) || (label_ptr >= idx))
+                return -1;
+
+            idx = label_ptr;
 
             if (!compressed)
                 ret += 2;
@@ -393,6 +401,8 @@ static int consume_labels(AvahiDnsPacket *p, unsigned idx, char *ret_name, size_
         } else
             return -1;
     }
+
+    return -1;
 }
 
 int avahi_dns_packet_consume_name(AvahiDnsPacket *p, char *ret_name, size_t l) {
@@ -579,6 +589,7 @@ static int parse_rdata(AvahiDnsPacket *p, AvahiRecord *r, uint16_t rdlength) {
             if (rdlength > 0) {
 
                 r->data.generic.data = avahi_memdup(avahi_dns_packet_get_rptr(p), rdlength);
+                r->data.generic.size = rdlength; 
                 
                 if (avahi_dns_packet_skip(p, rdlength) < 0)
                     return -1;
@@ -744,7 +755,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
         default:
 
             if (r->data.generic.size)
-                if (avahi_dns_packet_append_bytes(p, r->data.generic.data, r->data.generic.size))
+                if (!avahi_dns_packet_append_bytes(p, r->data.generic.data, r->data.generic.size))
                     return -1;
 
             break;
@@ -776,7 +787,7 @@ uint8_t* avahi_dns_packet_append_record(AvahiDnsPacket *p, AvahiRecord *r, int c
         goto fail;
     
     size = avahi_dns_packet_extend(p, 0) - start;
-    assert(size <= 0xFFFF);
+    assert(size <= AVAHI_DNS_RDATA_MAX);
 
 /*     avahi_log_debug("appended %u", size); */
 

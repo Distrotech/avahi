@@ -1,3 +1,207 @@
+Avahi 0.6.18
+============
+
+This is a bugfix release, adds a few new features and includes a new
+component.
+
+ * Add a new library libavahi-ui which contains a standard Gtk dialog
+   for browsing for services, and a new tool "zssh" that makes use of
+   it, which allows browsing for SSH and VNC servers and starts ssh or
+   xvncviewer if one item is selected.
+ * avahi-autoipd has been ported to FreeBSD (original patch from Bruce M Simpson)
+ * Improve OpenBSD, Solaris, MacOS X compatibility
+ * Linux inotify support for monitoring /etc/avahi/services/ and
+   /etc/avahi/hosts for changes. (Original patch from "behanw")
+ * Add the ability to dump the service type database from avahi-browse
+   with the new option "-b".
+ * Enable GCC stack smashing protection if available and working (Patch from tedp)
+ * Improve compatibility with Bonjour's libdns_sd (patch from Chris Rivera)
+ * Various updates to the service type database (based on patches from uws)
+ * Fix a local DoS vulnerability (very low priority, all you can do is 
+   make Avahi hit an assert()); problem identified by "jamesh"
+ * Fix a problem when constantly generating conflict events for an RR
+ * Fix registration of very large RRs (original patch from Sjoerd Simons)
+ * Various minor fixes
+
+This release is backwards compatible with Avahi 0.6.x with x < 18.
+
+Avahi 0.6.17
+============
+
+This is a bugfix release.
+
+ * Don't accept "localhost" as a local mDNS host name
+ * Allow running avahi-bookmarks as CGI script
+ * Improve libdns_sd compatibility
+ * Stability: libdns_sd mutex locking order fix
+ * Publish IPv6 addresses via IPv4 and vice versa
+ * IA64 fixes
+ * A lot of minor cleanups and fixes
+
+This release is backwards compatible with Avahi 0.6.x with x < 17.
+
+Avahi 0.6.16
+============
+
+This is a bugfix release, it fixes one DoS (100% CPU Usage) and a regression
+from the last release
+
+ * Revert previous patch to check nlmsg_pid as it is bogus and breaks in
+   many cases, notably when using NetworkManager (Closes: #72)
+ * Replace with new SO_PASSCRED-based check of the sending UID, which
+   seems to work better (Closes: #72)
+ * Handle some errors in libdns_sd more gracefully the way the real
+   libdns_sd does (Closes: #64)
+ * Apply fix for Linux 2.6.19+ where IFA_RTA / IFLA_RTA is no longer
+   defined (Closes: #86)
+ * Fix doxygen comments for avahi watch, thanks to tedp (Closes: #77)
+ * Make d-bus version detection work for >= 1.0 (Closes: #71)
+ * Dont dbus_connection_close on shared dbus connections (Closes: #68)
+ * Fix potential endless loop in dns label unpacking code (Closes: #84)
+ * Fix bogus assertion in client-publish-service.c example
+ * Mild fix to some doxygen docs for avahi-common/address.h
+ * Fix passing in custom priviledged group (previously ignored setting)
+   (Closes: #85) 
+
+This release is backwards compatible with Avahi 0.6.x with x < 16.
+
+Avahi 0.6.15
+============
+
+This is a bugfix release, this bug is potentially security sensitive
+
+ * Check that netlink messages actually originate from the kernel
+   and not another process.
+ * Fix build on NetBSD (thanks to Daniel S. Haischt)
+ * Fix dbus_service_browser not setting AVAHI_LOOKUP_RESULT_OUR_OWN.
+
+This release is backwards compatible with Avahi 0.6.x with x < 15.
+
+Avahi 0.6.14
+============
+
+This release fixes some bugs and includes a new component.
+
+Changes:
+
+  * Add new daemon "avahi-autoipd" which is an implementation of
+    IPv4LL as defined in RFC3927, a technology for assigning link-local IP
+    addresses without DHCP server. The same functionality has been available on
+    Windows under the name APIPA. While it is not the first implemenatation of
+    this technology for Free operating systems it is clearly the most powerful
+    and hopefully even the most secure. (Because it chroot()s and drops
+    priviliges and suchlike) For more information, especially about packaging
+    this new tool for distributions, please make sure to read:
+    http://avahi.org/wiki/AvahiAutoipd 
+    and of course the man page included in the tarball.  For the rationale for
+    adding this program to the Avahi toolset please read this mailing list
+    thread:
+    http://lists.freedesktop.org/archives/avahi/2006-September/000863.html
+  * Fix a segfault in the code handling static host name registrations
+  * Add a few new entries to the service type database
+  * s/D-?BUS/D-Bus/g
+  * Documentation updates
+  * Fix service type database building on Solaris
+  * Make use of newer D-Bus APIs
+  * Fix random seed initialization
+  * Install SFTP static service file by default
+  * Other minor code cleanups
+
+This release is backwards compatible with Avahi 0.6.x with x < 14.
+
+Please note that this version doesn't compile on NetBSD, patches
+welcome.
+
+Please note that avahi-autoipd is available on Linux only for
+now. Patches welcome. It is recommended to pass --disable-autoipd to
+"configure" on non-Linux operating systems, otherwise the build will
+fail.
+
+Avahi 0.6.13
+============
+
+This release fixes some bugs and includes minor enhancements.
+
+Changes:
+  * Add a new D-Bus method for changing the mDNS host name during
+    runtime. This functionality is only available to members of the
+    UNIX group "netdev", which is the same access group that is
+    enforced by GNOME's NetworkManager daemon. Since NM will probably
+    be the most prominent user of this new method, we decided to limit
+    access to the same group. The access group can be set by passing
+    --with-avahi-priv-access-group= to "configure". If you need more
+    sophisticated access control you can freely edit
+    /etc/dbus/system.d/avahi-dbus.conf.
+  * Add a new utility "avahi-set-host-name" which is a command line
+    wrapper around the aforementioned SetHostName() method.
+  * Bonjour API compatibility library:
+        * Implement DNSServiceUpdateRecord() 
+        * Allow passing NULL as callback function for
+          DNSServiceRegister()
+        * Implement subtype registration in DNSServiceRegister() in a
+          way that is compatible with Bonjour.
+	* Update to newer copy of dns_sd.h
+  * If the host name changes update names of static services wich
+    contain wildcards.
+  * Don't build documentation about embedding the Avahi mDNS stack into
+    other programs by default. This is a feature used only by embedded
+    developers. Pass --enable-core-docs to "configure" to enable
+    building these docs, like in Avahi <= 0.6.12.
+  * Build Qt documentation only when Qt support is enabled in
+    the configuration. Same for GLib.
+  * Change algorithm used to find a new host name on conflict. In
+    Avahi <= 0.6.12 a conflicting host name of "foobar" would be
+    changed to the new name "foobar2". With 0.6.13 "foobar-2" will be
+    picked instead. This follows Bonjour's behaviour and has the
+    advantage not confusing people with regular host names ending in
+    digits.
+  * Don't disable all static services when SIGHUP is recieved.
+  * Fix build when Avahi is configured without Gtk+ but with Python
+    support
+  * Fix build on MacOS X
+  * Support using Solaris DBM instead of gdbm for the service type
+    database. The latter is still recommended
+  * Minor other fixes and documentation updates
+
+This release is backwards compatible with Avahi 0.6.x with x < 13.
+
+Avahi 0.6.12
+============
+
+This is a bugfix and general cleanups release.
+
+Changes:
+  * Compatibility with newer D-Bus releases (0.9x)
+  * Compatibility with DBUS builds with --disable-checks
+  * Fix an error in the DBUS event loop wrapping which
+    caused the avahi client libraries to dispatch some events
+    too late when used with D-BUS 0.62 and newer.
+  * avahi-daemon: fix a minor memory leak in the DBUS code.
+  * avahi-glib: some GLIB adapter cleanups
+  * avahi-dnsconfd: fix segfault when passing an invalid command 
+    line option
+  * avahi-test: portability patches for Solaris
+  * avahi-browse: flush STDOUT after each line, making it useful 
+    in shell scripts.
+  * update service type database
+
+This release is backwards compatible with Avahi 0.6.x with x < 12.
+
+Avahi 0.6.11
+============
+
+This is a bugfix and portability release.
+
+Changes:
+  * Ported to Solaris
+  * avahi-sharp: fix a fatal error in object disposal code
+  * add a few new entries to the servivce type database
+  * fix potential crash when the daemon shuts down
+  * compatibility with newer autoconf versions
+
+This release is backwards compatible with Avahi 0.6, 0.6.1, 0.6.2,
+0.6.3, 0.6.4, 0.6.5, 0.6.6, 0.6.7, 0.6.9 and 0.6.10.
+
 Avahi 0.6.10
 ============
 

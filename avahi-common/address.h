@@ -53,7 +53,7 @@ enum {
 #define AVAHI_ADDRESS_STR_MAX 40 /* IPv6 Max = 4*8 + 7 + 1 for NUL */
 
 /** Return TRUE if the specified interface index is valid */
-#define AVAHI_IF_VALID(ifindex) (((ifindex) >= 0) || ((ifindex) == AVAHI_PROTO_UNSPEC))
+#define AVAHI_IF_VALID(ifindex) (((ifindex) >= 0) || ((ifindex) == AVAHI_IF_UNSPEC))
 
 /** Return TRUE if the specified protocol is valid */
 #define AVAHI_PROTO_VALID(protocol) (((protocol) == AVAHI_PROTO_INET) || ((protocol) == AVAHI_PROTO_INET6) || ((protocol) == AVAHI_PROTO_UNSPEC))
@@ -73,9 +73,9 @@ typedef struct AvahiAddress {
     AvahiProtocol proto; /**< Address family */
 
     union {
-        AvahiIPv6Address ipv6;  /** Address when IPv6 */
-        AvahiIPv4Address ipv4;  /** Address when IPv4 */
-        uint8_t data[1];        /** Type independant data field */
+        AvahiIPv6Address ipv6;  /**< Address when IPv6 */
+        AvahiIPv4Address ipv4;  /**< Address when IPv4 */
+        uint8_t data[1];        /**< Type independant data field */
     } data;
 } AvahiAddress;
 

@@ -96,12 +96,12 @@
 
       <option>
         <p><opt>enable-dbus=</opt> Takes either "yes", "no" or
-        "warn". If set to "yes" avahi-daemon connects to D-BUS,
+        "warn". If set to "yes" avahi-daemon connects to D-Bus,
         offering an object oriented client API. It is only available
         if Avahi has been compiled with <opt>--enable-dbus</opt> in
         which case it defaults to "yes". "warn" behaves like "yes",
         but the daemon starts up even when it fails to connect to a
-        D-BUS daemon. In addition, if the connection to the D-BUS
+        D-Bus daemon. In addition, if the connection to the D-Bus
         daemon is terminated we try to reconnect. (Unless we are in a
         chroot() environment where this definitely will fail.) </p>
       </option>
@@ -223,6 +223,22 @@
         SIGHUP to have it reload this file. Defaults to "no".</p>
       </option>
 
+      <option>
+        <p><opt>publish-aaaa-on-ipv4=</opt> Takes a boolean value
+        ("yes" or "no"). If set to "yes" avahi-daemon will publish an
+        IPv6 AAAA record via IPv4, i.e. the local IPv6 addresses can be
+        resolved using an IPv4 transport. Only useful when IPv4 is
+        enabled with <opt>use-ipv4=true</opt>. Defaults to "yes".</p>
+      </option>
+
+      <option>
+        <p><opt>publish-a-on-ipv6=</opt> Takes a boolean value
+        ("yes" or "no"). If set to "yes" avahi-daemon will publish an
+        IPv4 A record via IPv6, i.e. the local IPv4 addresses can be
+        resolved using an IPv6 transport. Only useful when IPv6 is
+        enabled with <opt>use-ipv6=true</opt>. Defaults to "no".</p>
+      </option>
+
     </section>
 
 	<section name="Section [reflector]">
@@ -281,13 +297,13 @@
       </option>
 
       <option>
-        <p><opt>rlimit-nproc=</opt> Value for RLIMIT_NPROC (number of process of user). Since only a single avahi-daemon process is usually running you can set this safely to 1.</p>
+        <p><opt>rlimit-nproc=</opt> Value for RLIMIT_NPROC (number of process of user). avahi-daemon forks of a helper process on systems where <manref name="chroot" section="2"/> is available. Therefore this value should not be set below 2.</p>
       </option>
 
     </section>
 
 	<section name="Authors">
-	  <p>The avahi developers &lt;@PACKAGE_BUGREPORT@&gt;; avahi is
+	  <p>The Avahi Developers &lt;@PACKAGE_BUGREPORT@&gt;; Avahi is
 	  available from <url href="@PACKAGE_URL@"/></p>
 	</section>
 	

@@ -19,7 +19,14 @@
   USA.
 ***/
 
+#include <config.h>
+#ifdef HAVE_GDBM
 #include <gdbm.h>
+#endif
+#ifdef HAVE_DBM
+#include <ndbm.h>
+#include <fcntl.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
@@ -29,16 +36,31 @@
 
 #include "stdb.h"
 
+#ifdef HAVE_GDBM
 static GDBM_FILE gdbm_file = NULL;
+#endif
+#ifdef HAVE_DBM
+static DBM *dbm_file = NULL;
+#endif
 static char *buffer = NULL;
+static char *enum_key = NULL;
 
 static int init(void) {
 
+#ifdef HAVE_GDBM
     if (gdbm_file)
         return 0;
 
     if (!(gdbm_file = gdbm_open((char*) DATABASE_FILE, 0, GDBM_READER, 0, NULL)))
         return -1;
+#endif
+#ifdef HAVE_DBM
+    if (dbm_file)
+        return 0;
+
+    if (!(dbm_file = dbm_open((char*) DATABASE_FILE, O_RDONLY, 0)))
+        return -1;
+#endif
 
     return 0;
 }
@@ -59,7 +81,12 @@ const char* stdb_lookup(const char *name) {
         snprintf(k, sizeof(k), "%s[%s]", name, loc);
         key.dptr = k;
         key.dsize = strlen(k);
+#ifdef HAVE_GDBM
         data = gdbm_fetch(gdbm_file, key);
+#endif
+#ifdef HAVE_DBM
+        data = dbm_fetch(dbm_file, key);
+#endif
 
         if (!data.dptr) {
             char l[32], *e;
@@ -70,7 +97,12 @@ const char* stdb_lookup(const char *name) {
                 snprintf(k, sizeof(k), "%s[%s]", name, l);
                 key.dptr = k;
                 key.dsize = strlen(k);
+#ifdef HAVE_GDBM
                 data = gdbm_fetch(gdbm_file, key);
+#endif
+#ifdef HAVE_DBM
+                data = dbm_fetch(dbm_file, key);
+#endif
             }
 
             if (!data.dptr) {
@@ -79,7 +111,12 @@ const char* stdb_lookup(const char *name) {
                     snprintf(k, sizeof(k), "%s[%s]", name, l);
                     key.dptr = k;
                     key.dsize = strlen(k);
+#ifdef HAVE_GDBM
                     data = gdbm_fetch(gdbm_file, key);
+#endif
+#ifdef HAVE_DBM
+                    data = dbm_fetch(dbm_file, key);
+#endif
                 }
             }
         }
@@ -88,7 +125,12 @@ const char* stdb_lookup(const char *name) {
     if (!data.dptr) {
         key.dptr = (char*) name;
         key.dsize = strlen(name);
+#ifdef HAVE_GDBM
         data = gdbm_fetch(gdbm_file, key);
+#endif
+#ifdef HAVE_DBM
+        data = dbm_fetch(dbm_file, key);
+#endif
     }
 
     if (!data.dptr)
@@ -106,8 +148,67 @@ fail:
 }
 
 void stdb_shutdown(void) {
+#ifdef HAVE_GDBM
     if (gdbm_file)
         gdbm_close(gdbm_file);
 
+    gdbm_file = NULL;
+#endif
+#ifdef HAVE_DBM
+    if (dbm_file)
+        dbm_close(dbm_file);
+
+    dbm_file = NULL;
+#endif
+
     avahi_free(buffer);
+    avahi_free(enum_key);
+
+    buffer = enum_key = NULL;
+}
+
+char *stdb_getent(void) {
+    datum key;
+    
+    if (init() < 0)
+        return NULL;
+
+    for (;;) {
+    
+        if (!enum_key) {
+#ifdef HAVE_GDBM
+            key = gdbm_firstkey(gdbm_file);
+#endif
+#ifdef HAVE_DBM
+            key = dbm_firstkey(dbm_file);
+#endif
+        } else {
+            key.dptr = enum_key;
+            key.dsize = strlen(enum_key);
+            
+#ifdef HAVE_GDBM
+            key = gdbm_nextkey(gdbm_file, key);
+#endif
+#ifdef HAVE_DBM
+            key = dbm_nextkey(dbm_file, key);
+#endif
+        }
+
+        avahi_free(enum_key);
+        enum_key = NULL;
+        
+        if (!key.dptr)
+            return NULL;
+    
+        enum_key = avahi_strndup(key.dptr, key.dsize);
+        free(key.dptr);
+
+        if (!strchr(enum_key, '['))
+            return enum_key;
+    }
+}
+
+void stdb_setent(void) {
+    avahi_free(enum_key);
+    enum_key = NULL;
 }

@@ -23,17 +23,39 @@ if HAVE_PYTHON
 
 avahidir = $(pythondir)/avahi
 
+
+if HAVE_GDBM
 avahi_SCRIPTS = ServiceTypeDatabase.py
 
 ServiceTypeDatabase.py: ServiceTypeDatabase.py.in
 	sed -e 's,@PYTHON\@,$(PYTHON),g' \
+		-e 's,@DBM\@,gdbm,g' \
+		-e 's,@FIRST_KEY\@,key = self.db.firstkey(),g' \
+		-e 's,@CHECK_KEY\@,while key is not None:,g' \
+		-e 's,@NEXT_KEY\@,key = self.db.nextkey(key),g' \
 		-e 's,@pkgdatadir\@,$(pkgdatadir),g' $< > $@
 	chmod +x $@
+endif
+
+if HAVE_DBM
+avahi_SCRIPTS = ServiceTypeDatabase.py
+
+ServiceTypeDatabase.py: ServiceTypeDatabase.py.in
+	sed -e 's,@PYTHON\@,$(PYTHON),g' \
+		-e 's,@DBM\@,dbm,g' \
+		-e 's,@FIRST_KEY\@,keys = self.db.keys(),g' \
+		-e 's,@CHECK_KEY\@,for key in keys:,g' \
+		-e 's,@NEXT_KEY\@,,g' \
+		-e 's,@pkgdatadir\@,$(pkgdatadir),g' $< > $@
+	chmod +x $@
+endif
+
+avahi_PYTHON = $(avahi_SCRIPTS)
 
 if HAVE_PYGTK
 if HAVE_PYTHON_DBUS
 
-avahi_PYTHON = __init__.py SimpleGladeApp.py 
+avahi_PYTHON += __init__.py SimpleGladeApp.py 
 
 endif
 endif

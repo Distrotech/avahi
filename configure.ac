@@ -21,19 +21,22 @@
 # USA.
 
 AC_PREREQ(2.57)
-AC_INIT([avahi],[0.6.10],[avahi (at) lists (dot) freedesktop (dot) org])
+AC_INIT([avahi],[0.6.18],[avahi (at) lists (dot) freedesktop (dot) org])
 AC_CONFIG_SRCDIR([avahi-core/server.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign 1.9 -Wall])
 
 AC_SUBST(PACKAGE_URL, [http://avahi.org/])
 
-AC_SUBST(LIBAVAHI_COMMON_VERSION_INFO, [7:0:4])
-AC_SUBST(LIBAVAHI_CORE_VERSION_INFO, [4:2:0])
-AC_SUBST(LIBAVAHI_CLIENT_VERSION_INFO, [4:2:1])
-AC_SUBST(LIBAVAHI_GLIB_VERSION_INFO, [1:0:0])
+AC_SUBST(LIBAVAHI_COMMON_VERSION_INFO, [7:4:4])
+AC_SUBST(LIBAVAHI_CORE_VERSION_INFO, [5:1:0])
+AC_SUBST(LIBAVAHI_CLIENT_VERSION_INFO, [5:2:2])
+AC_SUBST(LIBAVAHI_GLIB_VERSION_INFO, [1:1:0])
 AC_SUBST(LIBAVAHI_QT3_VERSION_INFO, [1:1:0])
 AC_SUBST(LIBAVAHI_QT4_VERSION_INFO, [1:1:0])
+AC_SUBST(LIBAVAHI_UI_VERSION_INFO, [0:0:0])
+
+# Do not touch these, since they we took this version-info from upstream HOWL/Bonjour
 AC_SUBST(LIBAVAHI_COMPAT_LIBDNS_SD_VERSION_INFO, [1:0:0])
 AC_SUBST(LIBAVAHI_COMPAT_HOWL_VERSION_INFO, [0:0:0])
 AC_SUBST(HOWL_COMPAT_VERSION, [0.9.8])
@@ -53,8 +56,91 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_GCC_TRADITIONAL
 
+# -fstack-protector
+AC_ARG_ENABLE([stack-protector],
+    [AS_HELP_STRING([--disable-stack-protector],
+        [Disable GCC's/libc's stack-smashing protection])],
+    [case "${enableval}" in
+         yes) enable_ssp=yes ;;
+          no) enable_ssp=no ;;
+           *) AC_MSG_ERROR([invalid value ${enableval} for --disable-stack-protector]) ;;
+     esac],
+    [enable_ssp=yes])
+
+if test x"$enable_ssp" = x"yes" && test x"$GCC" != x"yes"; then
+    AC_MSG_NOTICE([Disabling stack-smashing protection because compiler is not GCC])
+    enable_ssp=no
+fi
+
+if test x"$enable_ssp" = x"yes"; then
+    # Check for broken ssp in libc: http://www.avahi.org/ticket/105
+    # libc's brokenness will get in the way regardless of whether -lssp is
+    # provided, but provide it anyway (otherwise non-libc ssp would wrongly
+    # break here)
+
+    # Get -lssp if it exists
+    GCC_STACK_PROTECT_LIB
+
+    AC_MSG_CHECKING([whether stack-smashing protection is available])
+    ssp_old_cflags="$CFLAGS"
+    ssp_old_ldflags="$LDFLAGS"
+    CFLAGS="$CFLAGS -fstack-protector-all -fPIC"
+    LDFLAGS="$LDFLAGS -Wl,-z,defs"
+    cat confdefs.h > conftest.c
+    cat >>conftest.c <<_ACEOF
+void test_broken_ssp(c)
+    const char *c;
+{
+    char arr[[123]], *p; /* beware of possible double-braces if copying this */
+    for (p = arr; *c; ++p) {
+        *p = *c;
+        ++c;
+    }
+}
+_ACEOF
+    rm -f conftest.o
+
+    if $CC -c $CFLAGS $CPPFLAGS -o conftest.o conftest.c >/dev/null 2>&1; then
+        AC_MSG_RESULT([yes])
+        AC_MSG_CHECKING([whether stack-smashing protection is buggy])
+        if $CC -o conftest.so $LDFLAGS -shared conftest.o $LIBS >/dev/null 2>&1; then
+            AC_MSG_RESULT([no])
+        else
+            AC_MSG_RESULT([yes])
+            enable_ssp=no
+        fi
+    else
+        AC_MSG_RESULT([no])
+    fi
+
+    rm -f conftest.c conftest.o conftest.so
+
+    CFLAGS="$ssp_old_cflags"
+    LDFLAGS="$ssp_old_ldflags"
+fi
+
+if test x"$enable_ssp" = x"yes"; then
+    # Do this the long way so we don't call GCC_STACK_PROTECT_LIB twice
+    GCC_STACK_PROTECT_CC
+
+    AC_LANG_PUSH([C++])
+    GCC_STACK_PROTECT_CXX
+    AC_LANG_POP([C++])
+    # XXX: Update the enable_ssp value now for output later?
+fi
+
 # libtool stuff
 AC_PROG_LIBTOOL
+
+AC_CACHE_CHECK([whether the C++ compiler works], [avahi_cv_sys_cxx_works], [
+    AC_LANG_PUSH([C++])
+    AC_COMPILE_IFELSE([int main() { return 0; }], [avahi_cv_sys_cxx_works=yes],
+        [avahi_cv_sys_cxx_works=no])
+    AC_LANG_POP([C++])
+    ])
+[ if [ "x$avahi_cv_sys_cxx_works" = "xno" ]; then ]
+    AC_MSG_FAILURE([The C++ compiler does not work])
+[ fi ]
 
 ACX_PTHREAD(,AC_MSG_ERROR([Missing POSIX Threads support]))
 
@@ -104,9 +190,25 @@ AC_DEFINE([HAVE_SYS_SYSCTL_H],[],[Support for sys/sysctl.h])
 , [], [
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/param.h>
 ])
 
 AM_CONDITIONAL(HAVE_SYS_SYSCTL_H, [ test x"$HAVE_SYS_SYSCTL_H" = xyes ])
+
+#
+# Check for lifconf struct; only present on Solaris
+#
+AC_MSG_CHECKING(for struct lifconf)
+AC_CACHE_VAL(avahi_cv_has_struct_lifconf,
+[AC_TRY_COMPILE(
+[#include <sys/socket.h>
+#include <net/if.h>
+],[sizeof (struct lifconf);],
+avahi_cv_has_struct_lifconf=yes,avahi_cv_has_struct_lifconf=no)])
+AC_MSG_RESULT($avahi_cv_has_struct_lifconf)
+if test $avahi_cv_has_struct_lifconf = yes; then
+    AC_DEFINE(HAVE_STRUCT_LIFCONF,1,[Define if there is a struct lifconf.])
+fi
 
 #
 # Check for struct ip_mreqn
@@ -164,7 +266,7 @@ case $with_distro in
      AC_MSG_ERROR([Linux distribution autodetection failed, you must specify the distribution to target using --with-distro=DISTRO, set DISTRO to none if your distribution is not supported.])
      ;;
     *)
-     AC_MSG_ERROR([Your distribution (${with_distro}) is not yet supported, init scripts and dbus configuration will not be installed! (patches welcome), you can specify --with-distro=none to skip this check])
+     AC_MSG_ERROR([Your distribution (${with_distro}) is not yet supported, init scripts and D-Bus configuration will not be installed! (patches welcome), you can specify --with-distro=none to skip this check])
      ;;
 esac
 
@@ -190,7 +292,7 @@ test_gcc_flag() {
 # If using GCC specify some additional parameters
 if test "x$GCC" = "xyes" ; then
 
-    DESIRED_FLAGS="-Wall -W -Wextra -pedantic -pipe -Wformat -Wold-style-definition -Wdeclaration-after-statement -Wfloat-equal -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wpointer-arith -Wbad-function-cast -Wcast-qual -Wcast-align -Wwrite-strings -Winline"
+    DESIRED_FLAGS="-Wall -W -Wextra -pedantic -pipe -Wformat -Wold-style-definition -Wdeclaration-after-statement -Wfloat-equal -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wpointer-arith -Wbad-function-cast -Wcast-qual -Wcast-align -Wwrite-strings -Winline -fPIC"
 
     if test "x$HAVE_NETLINK" = "xyes" ; then
         # Test whether rtnetlink.h can be included when compiled with -std=c99
@@ -266,6 +368,16 @@ if test "x$HAVE_DLOPEN" = "xyes" ; then
     AC_DEFINE([HAVE_DLOPEN],1,[Have dlopen()])
 fi
 AM_CONDITIONAL(HAVE_DLOPEN, test "x$HAVE_DLOPEN" = "xyes")
+
+have_inotify=no
+AC_CHECK_HEADERS([linux/inotify.h], [have_inotify=yes])
+AC_CHECK_HEADERS([sys/inotify.h], [have_inotify=yes])
+
+AM_CONDITIONAL(HAVE_INOTIFY, test "x$have_inotify" = "xyes")
+
+if test "x$have_inotify" = "xyes" ; then
+   AC_DEFINE([HAVE_INOTIFY], 1, [Enable Linux inotify() usage])
+fi
 
 # Check for pkg-config manually first, as if its not installed the
 # PKG_PROG_PKG_CONFIG macro won't be defined.
@@ -372,10 +484,10 @@ fi
 AM_CONDITIONAL(HAVE_GTK, test "x$HAVE_GTK" = "xyes")
 
 #
-# D-BUS
+# D-Bus
 #
 AC_ARG_ENABLE(dbus,
-        AS_HELP_STRING([--disable-dbus],[Disable use of D-BUS]),
+        AS_HELP_STRING([--disable-dbus],[Disable use of D-Bus]),
         [case "${enableval}" in
                 yes) HAVE_DBUS=yes ;;
                 no)  HAVE_DBUS=no ;;
@@ -383,8 +495,8 @@ AC_ARG_ENABLE(dbus,
         esac],
         [HAVE_DBUS=yes]) 
 
-AC_ARG_WITH(dbus-sys, AS_HELP_STRING([--with-dbus-sys=<dir>], [where D-BUS system.d directory is]))
-AC_ARG_WITH(dbus-system-socket, AS_HELP_STRING([--with-dbus-system-address=<address>], [where the dbus system socket is, you probably want to put unix:path= at the start]))
+AC_ARG_WITH(dbus-sys, AS_HELP_STRING([--with-dbus-sys=<dir>], [Path to D-Bus system.d directory]))
+AC_ARG_WITH(dbus-system-socket, AS_HELP_STRING([--with-dbus-system-address=<address>], [Path to the D-Bus system socket, you probably want to put unix:path= at the start. Only needed for very old D-Bus releases]))
 
 DBUS_VERSION="Disabled"
 DBUS_SYS_DIR="Disabled"
@@ -392,7 +504,7 @@ DBUS_SYSTEM_BUS_DEFAULT_ADDRESS="Disabled"
 if test "x$HAVE_DBUS" = "xyes" ; then
     PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 0.34 ])
 
-    AC_DEFINE(HAVE_DBUS, 1, [Whether we have D-BUS or not])
+    AC_DEFINE(HAVE_DBUS, 1, [Whether we have D-Bus or not])
 
     DBUS_VERSION=`$PKG_CONFIG dbus-1 --modversion`
     DBUS_VERSION_MAJOR=`echo $DBUS_VERSION | awk -F. '{print $1}'`
@@ -409,16 +521,16 @@ if test "x$HAVE_DBUS" = "xyes" ; then
     fi
 
     if test "z$DBUS_VERSION_MAJOR" = "z0" -a "z$DBUS_VERSION_MINOR" = "z0" -a "z$DBUS_VERSION_MICRO" = "z0"; then
-        echo "Error: Couldn't determine the version of your DBUS package."
+        echo "Error: Couldn't determine the version of your D-Bus package."
         echo "  This is probably an error in this script, please report it"
         echo "  along with the following information:"
-        echo "      Base DBUS version ='$DBUS_VERSION'"
+        echo "      Base D-Buss version ='$DBUS_VERSION'"
         echo "      DBUS_VERSION_MAJOR='$DBUS_VERSION_MAJOR'"
         echo "      DBUS_VERSION_MINOR='$DBUS_VERSION_MINOR'"
         echo "      DBUS_VERSION_MICRO='$DBUS_VERSION_MICRO'"
         exit 1
     else
-        echo "Your dbus version is $DBUS_VERSION_MAJOR,$DBUS_VERSION_MINOR,$DBUS_VERSION_MICRO."
+        echo "Your D-Bus version is $DBUS_VERSION_MAJOR,$DBUS_VERSION_MINOR,$DBUS_VERSION_MICRO."
         DBUS_CFLAGS="$DBUS_CFLAGS -DDBUS_VERSION_MAJOR=$DBUS_VERSION_MAJOR"
         DBUS_CFLAGS="$DBUS_CFLAGS -DDBUS_VERSION_MINOR=$DBUS_VERSION_MINOR"
         DBUS_CFLAGS="$DBUS_CFLAGS -DDBUS_VERSION_MICRO=$DBUS_VERSION_MICRO"
@@ -438,11 +550,11 @@ if test "x$HAVE_DBUS" = "xyes" ; then
     if ! test -z "$with_dbus_system_address" ; then
         DBUS_SYSTEM_BUS_DEFAULT_ADDRESS="$with_dbus_system_address"
     else
-        # This is ugly, but D-BUS doesn't export this address for us
+        # This is ugly, but D-Bus doesn't export this address for us
         # so we have to guess, pretty much all setups i've seen have 
         # it in /var/lib/dbus or /var/run/dbus, and its defaulted to
         # /var/run upstream so we will try guess first then default
-        # to /var/run/dbus
+        # to /var/run/dbus.
 
         DBUS_SYSTEM_BUS_DEFAULT_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
         TRY_SOCKETS="/var/lib/dbus/system_bus_socket /var/run/dbus/system_bus_socket ${localstatedir}/run/dbus/system_bus_socket ${prefix}/var/run/dbus/system_bus_socket"
@@ -454,6 +566,10 @@ if test "x$HAVE_DBUS" = "xyes" ; then
     fi
     AC_SUBST(DBUS_SYSTEM_BUS_DEFAULT_ADDRESS)
     
+    SAVED_LIBS="$LIBS"
+    LIBS="$LIBS $DBUS_LIBS"
+    AC_CHECK_FUNCS([dbus_connection_close dbus_bus_get_private])
+    LIBS="$SAVED_LIBS"
 fi
 AM_CONDITIONAL(HAVE_DBUS, test "x$HAVE_DBUS" = "xyes")
 
@@ -481,24 +597,49 @@ AM_CONDITIONAL(HAVE_EXPAT, test "x$HAVE_EXPAT" = "xyes")
 #
 # GDBM
 #
+#
+# Check for dbm
+#
+AC_ARG_ENABLE(dbm,
+        AS_HELP_STRING([--enable-dbm],[Enable use of DBM]),
+        [case "${enableval}" in
+                yes) HAVE_DBM=yes ;;
+                no)  HAVE_DBM=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --enable-dbm) ;;
+        esac],
+        [HAVE_DBM=no]) 
+
 AC_ARG_ENABLE(gdbm,
         AS_HELP_STRING([--disable-gdbm],[Disable use of GDBM]),
         [case "${enableval}" in
                 yes) HAVE_GDBM=yes ;;
                 no)  HAVE_GDBM=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --enable-gdbm) ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-gdbm) ;;
         esac],
         [HAVE_GDBM=yes]) 
 
 if test "x$HAVE_GDBM" = "xyes" ; then
+    if test "x$HAVE_DBM" = "xyes" ; then
+        AC_MSG_ERROR([*** --enable-gdbm and --enable-dbm both specified ***])
+    fi
     AC_CHECK_LIB(gdbm, gdbm_open, [ AC_CHECK_HEADERS(gdbm.h, have_gdbm=true, have_gdbm=false) ], have_gdbm=false)
 
     if ! $have_gdbm ; then
         AC_MSG_ERROR([*** libgdbm not found ***])
     fi
     AC_DEFINE([HAVE_GDBM],[],[Support for GDBM])
+else
+    if test "x$HAVE_DBM" = "xyes" ; then
+        AC_CHECK_HEADERS(ndbm.h, have_dbm=true, have_dbm=false)
+
+        if ! $have_dbm ; then
+            AC_MSG_ERROR([*** dbm not found ***])
+        fi
+        AC_DEFINE([HAVE_DBM],[],[Support for DBM])
+    fi
 fi
 AM_CONDITIONAL(HAVE_GDBM, test "x$HAVE_GDBM" = "xyes")
+AM_CONDITIONAL(HAVE_DBM, test "x$HAVE_DBM" = "xyes")
 
 #
 # libdaemon
@@ -552,7 +693,7 @@ if test "x$HAVE_PYTHON" = "xyes" ; then
 
     if test "x$HAVE_DBUS" = "xyes" ; then
         AC_ARG_ENABLE(python-dbus,
-	    AS_HELP_STRING([--disable-python-dbus],[Disable use of D-BUS in Python]),
+	    AS_HELP_STRING([--disable-python-dbus],[Disable use of D-Bus in Python]),
             [case "${enableval}" in
                    yes) HAVE_PYTHON_DBUS=yes ;;
                    no)  HAVE_PYTHON_DBUS=no ;;
@@ -567,6 +708,9 @@ if test "x$HAVE_PYTHON" = "xyes" ; then
         AM_CHECK_PYMOD(socket,,,[AC_MSG_ERROR(Could not find Python module socket)])
         if test "x$HAVE_GDBM" = "xyes"; then
             AM_CHECK_PYMOD(gdbm,,,[AC_MSG_ERROR(Could not find Python module gdbm)])
+        fi
+        if test "x$HAVE_DBM" = "xyes"; then
+            AM_CHECK_PYMOD(dbm,,,[AC_MSG_ERROR(Could not find Python module dbm)])
         fi
     fi
 fi
@@ -632,9 +776,23 @@ fi
 AM_CONDITIONAL(HAVE_MONODOC, test "x$HAVE_MONODOC" = "xyes")
 
 #
-# Defining Avahi User and Group.
+# Build autoipd?
 #
-AC_ARG_WITH(avahi_user, AS_HELP_STRING([--with-avahi-user=<user>],[User for running the Avahi daemon (avahi)]))
+AC_ARG_ENABLE(autoipd,
+        AS_HELP_STRING([--disable-autoipd],[Disable building of avahi-autoipd]),
+        [case "${enableval}" in
+                yes) ENABLE_AUTOIPD=yes ;;
+                no)  ENABLE_AUTOIPD=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-autoipd) ;;
+        esac],
+        [ENABLE_AUTOIPD=yes])
+
+AM_CONDITIONAL(ENABLE_AUTOIPD, test "x$ENABLE_AUTOIPD" = "xyes")
+
+#
+# Defining users and groups
+#
+AC_ARG_WITH(avahi_user, AS_HELP_STRING([--with-avahi-user=<user>],[User for running avahi-daemon (avahi)]))
 if test -z "$with_avahi_user" ; then
     AVAHI_USER=avahi
 else
@@ -643,7 +801,7 @@ fi
 AC_SUBST(AVAHI_USER)
 AC_DEFINE_UNQUOTED(AVAHI_USER,"$AVAHI_USER", [User for running the Avahi daemon])
 
-AC_ARG_WITH(avahi_group,AS_HELP_STRING([--with-avahi-group=<group>],[Group for Avahi (avahi)]))
+AC_ARG_WITH(avahi_group,AS_HELP_STRING([--with-avahi-group=<group>],[Group for running avahi-daemon (avahi)]))
 if test -z "$with_avahi_group" ; then
     AVAHI_GROUP=avahi
 else
@@ -651,6 +809,33 @@ else
 fi
 AC_SUBST(AVAHI_GROUP)
 AC_DEFINE_UNQUOTED(AVAHI_GROUP,"$AVAHI_GROUP", [Group for Avahi])
+
+AC_ARG_WITH(avahi_priv_access_group,AS_HELP_STRING([--with-avahi-priv-access-group=<group>],[Priviliged access group for Avahi clients (netdev)]))
+if test -z "$with_avahi_priv_access_group" ; then
+    AVAHI_PRIV_ACCESS_GROUP=netdev
+else
+    AVAHI_PRIV_ACCESS_GROUP=$with_avahi_priv_access_group
+fi
+AC_SUBST(AVAHI_PRIV_ACCESS_GROUP)
+AC_DEFINE_UNQUOTED(AVAHI_PRIV_ACCESS_GROUP,"$AVAHI_PRIV_ACCESS_GROUP", [Privileged access group for Avahi clients])
+
+AC_ARG_WITH(autoipd_user, AS_HELP_STRING([--with-autoipd-user=<user>],[User for running the avahi-autoipd daemon (avahi-autoipd)]))
+if test -z "$with_autoipd_user" ; then
+    AVAHI_AUTOIPD_USER=avahi-autoipd
+else
+    AVAHI_AUTOIPD_USER=$with_autoipd_user
+fi
+AC_SUBST(AVAHI_AUTOIPD_USER)
+AC_DEFINE_UNQUOTED(AVAHI_AUTOIPD_USER,"$AVAHI_AUTOIPD_USER", [User for running the avahi-autoipd daemon])
+
+AC_ARG_WITH(autoipd_group,AS_HELP_STRING([--with-autoipd-group=<group>],[Group for running the avahi-autoipd daemon (avahi-autoipd)]))
+if test -z "$with_autoipd_group" ; then
+    AVAHI_AUTOIPD_GROUP=avahi-autoipd
+else
+    AVAHI_AUTOIPD_GROUP=$with_autoipd_group
+fi
+AC_SUBST(AVAHI_AUTOIPD_GROUP)
+AC_DEFINE_UNQUOTED(AVAHI_AUTOIPD_GROUP,"$AVAHI_AUTOIPD_GROUP", [Group for running the avahi-autoipd daemon])
 
 #
 # Avahi runtime dir
@@ -680,6 +865,16 @@ DX_XML_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN(avahi, doxygen.cfg, doxygen)
+
+AC_ARG_ENABLE(core-docs,
+        AS_HELP_STRING([--enable-core-docs],[Enable building of documentation for avahi-core]),
+[case "${enableval}" in
+  yes) ENABLE_CORE_DOCS=yes ;;
+  no)  ENABLE_CORE_DOCS=no ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-core-docs]) ;;
+esac],[ENABLE_CORE_DOCS=no])
+
+AM_CONDITIONAL([ENABLE_CORE_DOCS], [test "x$ENABLE_CORE_DOCS" = xyes])
 
 #
 # Build and Install man pages
@@ -797,6 +992,8 @@ avahi-sharp/Makefile
 avahi-compat-libdns_sd/Makefile
 avahi-compat-howl/Makefile
 avahi-compat-howl/samples/Makefile
+avahi-autoipd/Makefile
+avahi-ui/Makefile
 ])
 AC_OUTPUT
 
@@ -804,32 +1001,38 @@ AC_OUTPUT
 echo "
  ---{ $PACKAGE_NAME $VERSION }---
 
-    prefix:                 ${prefix}
-    sysconfdir:             ${sysconfdir}
-    localstatedir:          ${localstatedir}
-    avahi socket:           ${avahi_socket}
-    dbus-1 system.d dir:    ${DBUS_SYS_DIR}
-    dbus-1 version:         ${DBUS_VERSION}
-    dbus-1 system socket    ${DBUS_SYSTEM_BUS_DEFAULT_ADDRESS}
-    compiler:               ${CC}
-    cflags:                 ${CFLAGS}
-    Enable GLIB:            ${HAVE_GLIB}
-    Enable GTK:             ${HAVE_GTK}
-    Enable D-BUS:           ${HAVE_DBUS}
-    Enable Expat:           ${HAVE_EXPAT}
-    Enable GDBM:            ${HAVE_GDBM}
-    Enable libdaemon:       ${HAVE_LIBDAEMON}
-    Enable Python:          ${HAVE_PYTHON}
-    Enable pygtk:           ${HAVE_PYGTK}
-    Enable python-dbus:     ${HAVE_PYTHON_DBUS}
-    Enable QT3:             ${HAVE_QT3}
-    Enable QT4:             ${HAVE_QT4}
-    Enable Mono:            ${HAVE_MONO}
-    Enable Monodoc:         ${HAVE_MONODOC}
-    Distribution/OS:        ${with_distro}
-    User for Avahi:         ${AVAHI_USER}
-    Group for Avahi:        ${AVAHI_GROUP}
-    Enable chroot():        ${enable_chroot}
+    prefix:                                    ${prefix}
+    sysconfdir:                                ${sysconfdir}
+    localstatedir:                             ${localstatedir}
+    avahi socket:                              ${avahi_socket}
+    dbus-1 system.d dir:                       ${DBUS_SYS_DIR}
+    dbus-1 version:                            ${DBUS_VERSION}
+    dbus-1 system socket:                      ${DBUS_SYSTEM_BUS_DEFAULT_ADDRESS}
+    C Compiler:                                ${CC}
+    CFLAGS:                                    ${CFLAGS}
+    Enable GLIB:                               ${HAVE_GLIB}
+    Enable GTK:                                ${HAVE_GTK}
+    Enable D-Bus:                              ${HAVE_DBUS}
+    Enable Expat:                              ${HAVE_EXPAT}
+    Enable GDBM:                               ${HAVE_GDBM}
+    Enable DBM:                                ${HAVE_DBM}
+    Enable libdaemon:                          ${HAVE_LIBDAEMON}
+    Enable Python:                             ${HAVE_PYTHON}
+    Enable pygtk:                              ${HAVE_PYGTK}
+    Enable python-dbus:                        ${HAVE_PYTHON_DBUS}
+    Enable QT3:                                ${HAVE_QT3}
+    Enable QT4:                                ${HAVE_QT4}
+    Enable Mono:                               ${HAVE_MONO}
+    Enable Monodoc:                            ${HAVE_MONODOC}
+    Distribution/OS:                           ${with_distro}
+    User for avahi-daemon:                     ${AVAHI_USER}
+    Group for avahi-daemon:                    ${AVAHI_GROUP}
+    Priviliged access group for Avahi clients: ${AVAHI_PRIV_ACCESS_GROUP}
+    User for avahi-autoipd:                    ${AVAHI_AUTOIPD_USER}
+    Group for avahi-autoipd:                   ${AVAHI_AUTOIPD_GROUP}
+    Enable chroot():                           ${enable_chroot}
+    Enable Linux inotify:                      ${have_inotify}
+    Enable stack-smashing protection:          ${enable_ssp}
 "
 
 BUILD_DAEMON="no   (You need libdaemon and expat!)"
@@ -844,7 +1047,7 @@ if test "x$BUILD_DAEMON" = "xyes" -a "x$HAVE_DBUS" = "xyes" -a "x$HAVE_PYTHON" =
     BUILD_PYTHON=yes
 fi
 
-BUILD_CLIENT="no   (You need avahi-daemon and dbus!)"
+BUILD_CLIENT="no   (You need avahi-daemon and D-Bus!)"
 
 if test "x$BUILD_DAEMON" = "xyes" -a "x$HAVE_DBUS" = "xyes" ; then
     BUILD_CLIENT=yes
@@ -856,7 +1059,14 @@ fi
 if test "x$ENABLE_COMPAT_HOWL" = "xyes" -a "x$BUILD_CLIENT" != "xyes" ; then
    ENABLE_COMPAT_HOWL="no   (You need libavahi-client!)"
 fi
+if test "x$ENABLE_AUTOIPD" = "xyes" -a "x$HAVE_LIBDAEMON" != "xyes" ; then
+   ENABLE_AUTOIPD="no   (You need libdaemon!)"
+fi
 
+BUILD_UI="no"
+if test "x$HAVE_GTK" = "xyes" -a "x$BUILD_CLIENT" = "xyes" ; then
+   BUILD_UI="yes"
+fi
 
 echo "\
     Building libavahi-core              yes
@@ -873,4 +1083,7 @@ echo "\
     Building avahi-compat-libdns_sd:    ${ENABLE_COMPAT_LIBDNS_SD}
     Building avahi-compat-howl:         ${ENABLE_COMPAT_HOWL}
     Building tests:                     ${ENABLE_TESTS}
+    Building avahi-core documentation:  ${ENABLE_CORE_DOCS}
+    Building avahi-autoipd:             ${ENABLE_AUTOIPD}
+    Building libavahi-ui:               ${BUILD_UI}
 "

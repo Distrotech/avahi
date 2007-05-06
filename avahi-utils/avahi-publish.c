@@ -189,7 +189,11 @@ static void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UN
 
             if (config->verbose)
                 fprintf(stderr, "Host name conflict\n");
+
+            /* Fall through */
             
+        case AVAHI_CLIENT_S_REGISTERING:
+
             if (entry_group) {
                 avahi_entry_group_free(entry_group);
                 entry_group = NULL;
@@ -200,9 +204,9 @@ static void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UN
             
             if (config->verbose)
                 fprintf(stderr, "Waiting for daemon ...\n");
+            
             break;
             
-        case AVAHI_CLIENT_S_REGISTERING:
             ;
     }
 }
@@ -252,7 +256,6 @@ static int parse_command_line(Config *c, const char *argv0, int argc, char *argv
     c->port = 0;
     c->txt = c->subtypes = NULL;
 
-    opterr = 0;
     while ((o = getopt_long(argc, argv, "hVsavd:H:f", long_options, NULL)) >= 0) {
 
         switch(o) {
@@ -286,7 +289,6 @@ static int parse_command_line(Config *c, const char *argv0, int argc, char *argv
                 c->subtypes = avahi_string_list_add(c->subtypes, optarg);
                 break;
             default:
-                fprintf(stderr, "Invalid command line argument: %c\n", o);
                 return -1;
         }
     }

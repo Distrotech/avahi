@@ -370,7 +370,7 @@ void avahi_server_generate_response(AvahiServer *s, AvahiInterface *i, AvahiDnsP
         AvahiDnsPacket *reply;
         AvahiRecord *r;
 
-        if (!(reply = avahi_dns_packet_new_reply(p, 512 /* unicast DNS maximum packet size is 512 */ , 1, 1)))
+        if (!(reply = avahi_dns_packet_new_reply(p, 512 + AVAHI_DNS_PACKET_EXTRA_SIZE /* unicast DNS maximum packet size is 512 */ , 1, 1)))
             return; /* OOM */
         
         while ((r = avahi_record_list_next(s->record_list, NULL, NULL, NULL))) {
@@ -438,7 +438,6 @@ void avahi_server_generate_response(AvahiServer *s, AvahiInterface *i, AvahiDnsP
                          * the specific header field, and return to the caller */
                         
                         avahi_dns_packet_inc_field(reply, AVAHI_DNS_FIELD_ANCOUNT);
-
                         break;
                     }
 
@@ -449,21 +448,32 @@ void avahi_server_generate_response(AvahiServer *s, AvahiInterface *i, AvahiDnsP
 
                         avahi_dns_packet_free(reply);
                         size = avahi_record_get_estimate_size(r) + AVAHI_DNS_PACKET_HEADER_SIZE;
-                        if (size > AVAHI_DNS_PACKET_SIZE_MAX)
-                            size = AVAHI_DNS_PACKET_SIZE_MAX;
 
-                        if (!(reply = avahi_dns_packet_new_reply(p, size, 0, 1)))
+                        if (!(reply = avahi_dns_packet_new_reply(p, size + AVAHI_DNS_PACKET_EXTRA_SIZE, 0, 1)))
                             break; /* OOM */
 
-                        if (!avahi_dns_packet_append_record(reply, r, flush_cache, 0)) {
+                        if (avahi_dns_packet_append_record(reply, r, flush_cache, 0)) {
+
+                            /* Appending this record succeeded, so incremeant
+                             * the specific header field, and return to the caller */
+                            
+                            avahi_dns_packet_inc_field(reply, AVAHI_DNS_FIELD_ANCOUNT);
+                            break;
+
+                        }  else {
+
+                            /* We completely fucked up, there's
+                             * nothing we can do. The RR just doesn't
+                             * fit in. Let's ignore it. */
+                            
                             char *t;
                             avahi_dns_packet_free(reply);
+                            reply = NULL;
                             t = avahi_record_to_string(r);
                             avahi_log_warn("Record [%s] too large, doesn't fit in any packet!", t);
                             avahi_free(t);
                             break;
-                        } else
-                            avahi_dns_packet_inc_field(reply, AVAHI_DNS_FIELD_ANCOUNT);
+                        }
                     }
 
                     /* Appending the record didn't succeeed, so let's send this packet, and create a new one */
@@ -803,7 +813,7 @@ static void reflect_legacy_unicast_query_packet(AvahiServer *s, AvahiDnsPacket *
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ID, slot->id);
     
     for (j = s->monitor->interfaces; j; j = j->interface_next)
-        if (avahi_interface_is_relevant(j) &&
+        if (j->announcing &&
             j != i &&
             (s->config.reflect_ipv || j->protocol == i->protocol)) {
 
@@ -884,7 +894,7 @@ static void dispatch_packet(AvahiServer *s, AvahiDnsPacket *p, const AvahiAddres
     assert(src_address->proto == dst_address->proto);
 
     if (!(i = avahi_interface_monitor_get_interface(s->monitor, iface, src_address->proto)) ||
-        !avahi_interface_is_relevant(i)) {
+        !i->announcing) {
         avahi_log_warn("Recieved packet from invalid interface.");
         return;
     }
@@ -977,7 +987,7 @@ static void dispatch_legacy_unicast_packet(AvahiServer *s, AvahiDnsPacket *p) {
     }
 
     if (!(j = avahi_interface_monitor_get_interface(s->monitor, slot->interface, slot->address.proto)) ||
-        !avahi_interface_is_relevant(j))
+        !j->announcing)
         return;
 
     /* Patch the original ID into this response */
@@ -1226,17 +1236,27 @@ static void update_fqdn(AvahiServer *s) {
 }
 
 int avahi_server_set_host_name(AvahiServer *s, const char *host_name) {
+    char *hn = NULL;
     assert(s);
-    assert(host_name);
+    
+    AVAHI_CHECK_VALIDITY(s, !host_name || avahi_is_valid_host_name(host_name), AVAHI_ERR_INVALID_HOST_NAME);
 
-    if (host_name && !avahi_is_valid_host_name(host_name))
-        return avahi_server_set_errno(s, AVAHI_ERR_INVALID_HOST_NAME);
+    if (!host_name) {
+        hn = avahi_get_host_name_strdup();
+        hn[strcspn(hn, ".")] = 0;
+        host_name = hn;
+    }
 
+    if (avahi_domain_equal(s->host_name, host_name) && s->state != AVAHI_SERVER_COLLISION) {
+        avahi_free(hn);
+        return avahi_server_set_errno(s, AVAHI_ERR_NO_CHANGE);
+    }
+    
     withdraw_host_rrs(s);
 
     avahi_free(s->host_name);
-    s->host_name = host_name ? avahi_normalize_name_strdup(host_name) : avahi_get_host_name_strdup();
-    s->host_name[strcspn(s->host_name, ".")] = 0;
+    s->host_name = hn ? hn : avahi_strdup(host_name);
+    
     update_fqdn(s);
 
     register_stuff(s);
@@ -1244,19 +1264,30 @@ int avahi_server_set_host_name(AvahiServer *s, const char *host_name) {
 }
 
 int avahi_server_set_domain_name(AvahiServer *s, const char *domain_name) {
+    char *dn = NULL;
     assert(s);
-    assert(domain_name);
 
-    if (domain_name && !avahi_is_valid_domain_name(domain_name))
-        return avahi_server_set_errno(s, AVAHI_ERR_INVALID_DOMAIN_NAME);
+    AVAHI_CHECK_VALIDITY(s, !domain_name || avahi_is_valid_domain_name(domain_name), AVAHI_ERR_INVALID_DOMAIN_NAME);
+
+    if (!domain_name) {
+        dn = avahi_strdup("local");
+        domain_name = dn;
+    }
+    
+    if (avahi_domain_equal(s->domain_name, domain_name)) {
+        avahi_free(dn);
+        return avahi_server_set_errno(s, AVAHI_ERR_NO_CHANGE);
+    }
 
     withdraw_host_rrs(s);
 
     avahi_free(s->domain_name);
-    s->domain_name = domain_name ? avahi_normalize_name_strdup(domain_name) : avahi_strdup("local");
+    s->domain_name = avahi_normalize_name_strdup(domain_name);
     update_fqdn(s);
 
     register_stuff(s);
+
+    avahi_free(dn);
     return AVAHI_OK;
 }
 
@@ -1539,6 +1570,8 @@ AvahiServerConfig* avahi_server_config_init(AvahiServerConfig *c) {
     c->browse_domains = NULL;
     c->disable_publishing = 0;
     c->allow_point_to_point = 0;
+    c->publish_aaaa_on_ipv4 = 1;
+    c->publish_a_on_ipv6 = 0;
     
     return c;
 }
@@ -1699,4 +1732,10 @@ int avahi_server_set_wide_area_servers(AvahiServer *s, const AvahiAddress *a, un
 
     avahi_wide_area_set_servers(s->wide_area_lookup_engine, a, n);
     return AVAHI_OK;
+}
+
+const AvahiServerConfig* avahi_server_get_config(AvahiServer *s) {
+    assert(s);
+
+    return &s->config;
 }

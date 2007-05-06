@@ -75,6 +75,16 @@ else
 	return $1
     }
     
+    log_warning_msg () {
+	if log_use_fancy_output; then
+	    YELLOW=`$TPUT setaf 3`
+	    NORMAL=`$TPUT op`
+	    echo "$YELLOW*$NORMAL $@"
+	else
+	    echo "$@"
+	fi
+    }
+
 fi
 
 #set -e
@@ -83,9 +93,19 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="Avahi Unicast DNS Configuration Daemon"
 NAME="avahi-dnsconfd"
 DAEMON="@sbindir@/$NAME"
+SCRIPTNAME=/etc/init.d/$NAME
 
 # Gracefully exit if the package has been removed.
 test -x $DAEMON || exit 0
+
+# don't start if /etc/default/avahi-dnsconfd says so.
+AVAHI_DNSCONFD_START=1
+test -f /etc/default/avahi-dnsconfd && . /etc/default/avahi-dnsconfd
+
+if [ "$AVAHI_DNSCONFD_START" != "1" -a "$1" != "stop" ]; then
+    log_warning_msg "Not starting $DESC $NAME, disabled via /etc/default/$NAME"
+    exit 0
+fi
 
 #
 #       Function that starts the daemon/service.

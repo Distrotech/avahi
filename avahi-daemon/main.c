@@ -33,6 +33,7 @@
 #include <grp.h>
 #include <pwd.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <time.h>
@@ -40,6 +41,12 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
+
+#ifdef HAVE_SYS_INOTIFY_H
+#include <sys/inotify.h>
+#else
+#include "inotify-nosys.h"
+#endif
 
 #include <libdaemon/dfork.h>
 #include <libdaemon/dsignal.h>
@@ -267,7 +274,7 @@ static void server_callback(AvahiServer *s, AvahiServerState state, void *userda
         case AVAHI_SERVER_RUNNING:
             avahi_log_info("Server startup complete. Host name is %s. Local service cookie is %u.", avahi_server_get_host_name_fqdn(s), avahi_server_get_local_service_cookie(s));
             
-            avahi_set_proc_title("%s: running [%s]", argv0, avahi_server_get_host_name_fqdn(s));
+            avahi_set_proc_title(argv0, "%s: running [%s]", argv0, avahi_server_get_host_name_fqdn(s));
             
             static_service_add_to_server();
             static_hosts_add_to_server();
@@ -286,18 +293,17 @@ static void server_callback(AvahiServer *s, AvahiServerState state, void *userda
         case AVAHI_SERVER_COLLISION: {
             char *n;
             
+            avahi_set_proc_title(argv0, "%s: collision", argv0);
+            
             static_service_remove_from_server();
             static_hosts_remove_from_server();
-            
             remove_dns_server_entry_groups();
-            
+
             n = avahi_alternative_host_name(avahi_server_get_host_name(s));
             avahi_log_warn("Host name conflict, retrying with <%s>", n);
             avahi_server_set_host_name(s, n);
             avahi_free(n);
 
-            avahi_set_proc_title("%s: collision", argv0);
-            
             break;
         }
 
@@ -308,8 +314,14 @@ static void server_callback(AvahiServer *s, AvahiServerState state, void *userda
             break;
 
         case AVAHI_SERVER_REGISTERING:
-            avahi_set_proc_title("%s: registering [%s]", argv0, avahi_server_get_host_name_fqdn(s));
 
+            avahi_set_proc_title(argv0, "%s: registering [%s]", argv0, avahi_server_get_host_name_fqdn(s));
+            
+            static_service_remove_from_server();
+            static_hosts_remove_from_server();
+            remove_dns_server_entry_groups();
+            
+            break;
 
         case AVAHI_SERVER_INVALID:
             break;
@@ -374,7 +386,6 @@ static int parse_command_line(DaemonConfig *c, int argc, char *argv[]) {
 
     assert(c);
 
-    opterr = 0;
     while ((o = getopt_long(argc, argv, "hDkVf:rcs", long_options, NULL)) >= 0) {
 
         switch(o) {
@@ -421,7 +432,6 @@ static int parse_command_line(DaemonConfig *c, int argc, char *argv[]) {
                 c->debug = 1;
                 break;
             default:
-                fprintf(stderr, "Invalid command line argument: %c\n", o);
                 return -1;
         }
     }
@@ -437,7 +447,7 @@ static int parse_command_line(DaemonConfig *c, int argc, char *argv[]) {
 static int is_yes(const char *s) {
     assert(s);
     
-    return *s == 'y' || *s == 'Y';
+    return *s == 'y' || *s == 'Y' || *s == '1' || *s == 't' || *s == 'T';
 }
 
 static int load_config_file(DaemonConfig *c) {
@@ -536,8 +546,12 @@ static int load_config_file(DaemonConfig *c) {
                     c->server_config.add_service_cookie = is_yes(p->value);
                 else if (strcasecmp(p->key, "publish-dns-servers") == 0) {
                     avahi_strfreev(c->publish_dns_servers);
-                    c->publish_dns_servers = avahi_split_csv(p->value); 
-                } else {
+                    c->publish_dns_servers = avahi_split_csv(p->value);
+                } else if (strcasecmp(p->key, "publish-a-on-ipv6") == 0)
+                    c->server_config.publish_a_on_ipv6 = is_yes(p->value);
+                else if (strcasecmp(p->key, "publish-aaaa-on-ipv4") == 0)
+                    c->server_config.publish_aaaa_on_ipv4 = is_yes(p->value);
+                else {
                     avahi_log_error("Invalid configuration key \"%s\" in group \"%s\"\n", p->key, g->name);
                     goto finish;
                 }
@@ -594,10 +608,12 @@ static int load_config_file(DaemonConfig *c) {
                 } else if (strcasecmp(p->key, "rlimit-stack") == 0) {
                     c->rlimit_stack_set = 1;
                     c->rlimit_stack = atoi(p->value);
-#ifdef RLIMIT_NPROC
                 } else if (strcasecmp(p->key, "rlimit-nproc") == 0) {
+#ifdef RLIMIT_NPROC
                     c->rlimit_nproc_set = 1;
                     c->rlimit_nproc = atoi(p->value);
+#else
+                    avahi_log_error("Ignoring configuration key \"%s\" in group \"%s\"\n", p->key, g->name);
 #endif
                 } else {
                     avahi_log_error("Invalid configuration key \"%s\" in group \"%s\"\n", p->key, g->name);
@@ -645,6 +661,81 @@ static void dump(const char *text, AVAHI_GCC_UNUSED void* userdata) {
     avahi_log_info("%s", text);
 }
 
+#ifdef HAVE_INOTIFY
+
+static int inotify_fd = -1;
+
+static void add_inotify_watches(void) {
+    int c = 0;
+    /* We ignore the return values, because one or more of these files
+     * might not exist and we're OK with that. In addition we never
+     * want to remove these watches, hence we keep their ids? */
+
+#ifdef ENABLE_CHROOT
+    c = config.use_chroot;
+#endif
+    
+    inotify_add_watch(inotify_fd, c ? "/services" : AVAHI_SERVICE_DIR, IN_CLOSE_WRITE|IN_DELETE|IN_DELETE_SELF|IN_MOVED_FROM|IN_MOVED_TO|IN_MOVE_SELF|IN_ONLYDIR);
+    inotify_add_watch(inotify_fd, c ? "/" : AVAHI_CONFIG_DIR, IN_CLOSE_WRITE|IN_DELETE|IN_DELETE_SELF|IN_MOVED_FROM|IN_MOVED_TO|IN_MOVE_SELF|IN_ONLYDIR);
+}
+
+#endif
+
+static void reload_config(void) {
+
+#ifdef HAVE_INOTIFY
+    /* Refresh in case the config dirs have been removed */
+    add_inotify_watches();
+#endif
+
+#ifdef ENABLE_CHROOT
+    static_service_load(config.use_chroot);
+    static_hosts_load(config.use_chroot);
+#else
+    static_service_load(0);
+    static_hosts_load(0);
+#endif            
+    static_service_add_to_server();
+    static_hosts_add_to_server();
+    
+    if (resolv_conf_entry_group)
+        avahi_s_entry_group_reset(resolv_conf_entry_group);
+    
+    load_resolv_conf();
+    
+    update_wide_area_servers();
+    
+    if (config.publish_resolv_conf && resolv_conf && resolv_conf[0])
+        resolv_conf_entry_group = add_dns_servers(avahi_server, resolv_conf_entry_group, resolv_conf);
+}
+
+#ifdef HAVE_INOTIFY
+
+static void inotify_callback(AvahiWatch *watch, int fd, AVAHI_GCC_UNUSED AvahiWatchEvent event, AVAHI_GCC_UNUSED void *userdata) {
+    char* buffer;
+    int n = 0;
+
+    assert(fd == inotify_fd);
+    assert(watch);
+
+    ioctl(inotify_fd, FIONREAD, &n);
+    if (n <= 0)
+        n = 128;
+
+    buffer = avahi_malloc(n);
+    if (read(inotify_fd, buffer, n) < 0 ) {
+        avahi_free(buffer);
+        avahi_log_error("Failed to read inotify event: %s", avahi_strerror(errno));
+	return;
+    }
+    avahi_free(buffer);
+
+    avahi_log_info("Files changed, reloading.");
+    reload_config();
+}
+
+#endif
+
 static void signal_callback(AvahiWatch *watch, AVAHI_GCC_UNUSED int fd, AVAHI_GCC_UNUSED AvahiWatchEvent event, AVAHI_GCC_UNUSED void *userdata) {
     int sig;
     const AvahiPoll *poll_api;
@@ -673,26 +764,8 @@ static void signal_callback(AvahiWatch *watch, AVAHI_GCC_UNUSED int fd, AVAHI_GC
 
         case SIGHUP:
             avahi_log_info("Got SIGHUP, reloading.");
-#ifdef ENABLE_CHROOT
-            static_service_load(config.use_chroot);
-            static_hosts_load(config.use_chroot);
-#else
-            static_service_load(0);
-            static_hosts_load(0);
-#endif            
-            static_service_add_to_server();
-            static_service_remove_from_server();
 
-            if (resolv_conf_entry_group)
-                avahi_s_entry_group_reset(resolv_conf_entry_group);
-
-            load_resolv_conf();
-
-            update_wide_area_servers();
-            
-            if (config.publish_resolv_conf && resolv_conf && resolv_conf[0])
-                resolv_conf_entry_group = add_dns_servers(avahi_server, resolv_conf_entry_group, resolv_conf);
-
+            reload_config();
             break;
 
         case SIGUSR1:
@@ -715,6 +788,9 @@ static int run_server(DaemonConfig *c) {
     const AvahiPoll *poll_api = NULL;
     AvahiWatch *sig_watch = NULL;
     int retval_is_sent = 0;
+#ifdef HAVE_INOTIFY
+    AvahiWatch *inotify_watch = NULL;
+#endif
 
     assert(c);
 
@@ -749,7 +825,7 @@ static int run_server(DaemonConfig *c) {
 #endif
             ) < 0) {
 
-            avahi_log_warn("WARNING: Failed to contact D-BUS daemon.");
+            avahi_log_warn("WARNING: Failed to contact D-Bus daemon.");
 
             if (c->fail_on_missing_dbus)
                 goto finish;
@@ -775,6 +851,19 @@ static int run_server(DaemonConfig *c) {
         avahi_log_info("Successfully dropped remaining capabilities.");
     }
     
+#endif
+
+#ifdef HAVE_INOTIFY
+    if ((inotify_fd = inotify_init()) < 0)
+        avahi_log_warn( "Failed to initialize inotify: %s", strerror(errno));
+    else {
+        add_inotify_watches();
+        
+        if (!(inotify_watch = poll_api->watch_new(poll_api, inotify_fd, AVAHI_WATCH_IN, inotify_callback, NULL))) {
+            avahi_log_error( "Failed to create inotify watcher");
+            goto finish;
+        }
+    }
 #endif
 
     load_resolv_conf();
@@ -840,6 +929,13 @@ finish:
     if (sig_watch)
         poll_api->watch_free(sig_watch);
 
+#ifdef HAVE_INOTIFY
+    if (inotify_watch)
+        poll_api->watch_free(inotify_watch);
+    if (inotify_fd >= 0)
+        close(inotify_fd);
+#endif
+    
     if (simple_poll_api) {
         avahi_simple_poll_free(simple_poll_api);
         simple_poll_api = NULL;
@@ -1016,7 +1112,7 @@ static void init_rand_seed(void) {
     }
 
     /* If the initialization failed by some reason, we add the time to the seed*/
-    seed |= (unsigned) time(NULL);
+    seed ^= (unsigned) time(NULL);
 
     srand(seed);
 }
@@ -1186,7 +1282,7 @@ int main(int argc, char *argv[]) {
 #endif
         avahi_log_info("%s "PACKAGE_VERSION" starting up.", argv0);
 
-        avahi_set_proc_title("%s: starting up", argv0);
+        avahi_set_proc_title(argv0, "%s: starting up", argv0);
         
         if (run_server(&config) == 0)
             r = 0;

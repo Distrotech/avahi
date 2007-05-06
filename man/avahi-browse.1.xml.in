@@ -29,6 +29,7 @@
       <cmd>avahi-browse [<arg>options</arg>] <arg>service-type</arg></cmd>
       <cmd>avahi-browse [<arg>options</arg>] <opt>--all</opt></cmd>
       <cmd>avahi-browse [<arg>options</arg>] <opt>--browse-domains</opt></cmd>
+      <cmd>avahi-browse [<arg>options</arg>] <opt>--dump-db</opt></cmd>
       <cmd>avahi-browse-domains [<arg>options</arg>]</cmd>
 	</synopsis>
 	
@@ -96,6 +97,11 @@
 	  </option>
 
 	  <option>
+		<p><opt>-b | --dump-db</opt></p>
+		<optdesc><p>Dump the service type database (may be combined with -k)</p></optdesc>
+	  </option>
+
+	  <option>
 		<p><opt>-h | --help</opt></p>
 		<optdesc><p>Show help.</p></optdesc>
 	  </option>
@@ -108,7 +114,7 @@
 	</options>
 	
 	<section name="Authors">
-	  <p>The avahi developers &lt;@PACKAGE_BUGREPORT@&gt;; avahi is
+	  <p>The Avahi Developers &lt;@PACKAGE_BUGREPORT@&gt;; Avahi is
 	  available from <url href="@PACKAGE_URL@"/></p>
 	</section>
 	

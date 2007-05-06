@@ -43,7 +43,7 @@
 
 #include "sigint.h"
 
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
 #include "stdb.h"
 #endif
 
@@ -53,6 +53,9 @@ typedef enum {
     COMMAND_BROWSE_SERVICES,
     COMMAND_BROWSE_ALL_SERVICES,
     COMMAND_BROWSE_DOMAINS
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
+    , COMMAND_DUMP_STDB
+#endif
 } Command;
 
 typedef struct Config {
@@ -65,7 +68,7 @@ typedef struct Config {
     Command command;
     int resolve;
     int no_fail;
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
     int no_db_lookup;
 #endif
 } Config;
@@ -138,7 +141,7 @@ static ServiceInfo *find_service(AvahiIfIndex interface, AvahiProtocol protocol,
 static void print_service_line(Config *config, char c, AvahiIfIndex interface, AvahiProtocol protocol, const char *name, const char *type, const char *domain) {
     char ifname[IF_NAMESIZE];
 
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
     if (!config->no_db_lookup)
         type = stdb_lookup(type);
 #endif
@@ -148,6 +151,7 @@ static void print_service_line(Config *config, char c, AvahiIfIndex interface, A
            interface != AVAHI_IF_UNSPEC ? if_indextoname(interface, ifname) : "n/a",
            protocol != AVAHI_PROTO_UNSPEC ? avahi_proto_to_string(protocol) : "n/a", 
            n_columns-35, name, type, domain);
+    fflush(stdout);
 }
 
 static void service_resolver_callback(
@@ -206,6 +210,7 @@ static void service_resolver_callback(
     assert(n_resolving > 0);
     n_resolving--;
     check_terminate(i->config);
+    fflush(stdout);
 }
 
 static ServiceInfo *add_service(Config *c, AvahiIfIndex interface, AvahiProtocol protocol, const char *name, const char *type, const char *domain) {
@@ -579,7 +584,11 @@ static void help(FILE *f, const char *argv0) {
         fprintf(f,
                 "%s [options] <service type>\n"
                 "%s [options] -a\n"
-                "%s [options] -D\n\n",
+                "%s [options] -D\n"
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
+                "%s [options] -b\n",
+#endif
+                "\n",
                 argv0, argv0, argv0);
 
             fprintf(f, 
@@ -594,8 +603,9 @@ static void help(FILE *f, const char *argv0) {
             "    -l --ignore-local    Ignore local services\n"
             "    -r --resolve         Resolve services found\n"
             "    -f --no-fail         Don't fail if the daemon is not available\n"
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
             "    -k --no-db-lookup    Don't lookup service types\n"
+            "    -b --dump-db         Dump service type database\n"        
 #endif
             );
 }
@@ -615,8 +625,9 @@ static int parse_command_line(Config *c, const char *argv0, int argc, char *argv
         { "ignore-local",   no_argument,       NULL, 'l' },
         { "resolve",        no_argument,       NULL, 'r' },
         { "no-fail",        no_argument,       NULL, 'f' },
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
         { "no-db-lookup",   no_argument,       NULL, 'k' },
+        { "dump-db",        no_argument,       NULL, 'b' },
 #endif
         { NULL, 0, NULL, 0 }
     };
@@ -632,14 +643,13 @@ static int parse_command_line(Config *c, const char *argv0, int argc, char *argv
         c->no_fail = 0;
     c->domain = c->stype = NULL;
 
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
     c->no_db_lookup = 0;
 #endif
     
-    opterr = 0;
     while ((o = getopt_long(argc, argv, "hVd:avtclrDf"
-#ifdef HAVE_GDBM
-                            "k"
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
+                            "kb"
 #endif
                             , long_options, NULL)) >= 0) {
 
@@ -678,13 +688,15 @@ static int parse_command_line(Config *c, const char *argv0, int argc, char *argv
             case 'f':
                 c->no_fail = 1;
                 break;
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
             case 'k':
                 c->no_db_lookup = 1;
                 break;
+            case 'b':
+                c->command = COMMAND_DUMP_STDB;
+                break;
 #endif
             default:
-                fprintf(stderr, "Invalid command line argument: %c\n", o);
                 return -1;
         }
     }
@@ -760,6 +772,23 @@ int main(int argc, char *argv[]) {
             avahi_simple_poll_loop(simple_poll);
             ret = 0;
             break;
+
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
+        case COMMAND_DUMP_STDB: {
+            char *t;
+            stdb_setent();
+
+            while ((t = stdb_getent())) {
+                if (config.no_db_lookup)
+                    printf("%s\n", t);
+                else
+                    printf("%s\n", stdb_lookup(t));
+            }
+            
+            ret = 0;
+            break;
+        }
+#endif
     }
     
     
@@ -781,7 +810,7 @@ fail:
 
     avahi_string_list_free(browsed_types);
 
-#ifdef HAVE_GDBM
+#if defined(HAVE_GDBM) || defined(HAVE_DBM)
     stdb_shutdown();
 #endif    
 

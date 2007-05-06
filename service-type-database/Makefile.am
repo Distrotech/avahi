@@ -28,13 +28,36 @@ noinst_SCRIPTS=build-db
 pkgdata_DATA+=service-types.db
 
 build-db: build-db.in
-	sed -e 's,@PYTHON\@,$(PYTHON),g' $< > $@
+	sed -e 's,@PYTHON\@,$(PYTHON),g' \
+	    -e 's,@DBM\@,gdbm,g' $< > $@
 	chmod +x $@
 
 service-types.db: service-types build-db
-	$(PYTHON) build-db $(srcdir)/$< $@
+	$(PYTHON) build-db $< $@.coming
+	mv $@.coming $@
 
 CLEANFILES = service-types.db build-db
+
+endif
+if HAVE_DBM
+
+noinst_SCRIPTS=build-db
+pkgdata_DATA+=service-types.db.pag service-types.db.dir
+
+build-db: build-db.in
+	sed -e 's,@PYTHON\@,$(PYTHON),g' \
+	    -e 's,@DBM\@,dbm,g' $< > $@
+	chmod +x $@
+
+service-types.db.pag: service-types.db
+	mv service-types.db.coming.pag service-types.db.pag
+service-types.db.dir: service-types.db
+	mv service-types.db.coming.dir service-types.db.dir
+service-types.db: service-types build-db
+	$(PYTHON) build-db $< $@.coming
+	if test -f "$@.coming"; then mv $@.coming $@; fi
+
+CLEANFILES = service-types.db* build-db
 
 endif
 endif

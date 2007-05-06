@@ -53,7 +53,8 @@ avahi_daemon_SOURCES = \
 	static-hosts.c static-hosts.h \
 	ini-file-parser.c ini-file-parser.h \
 	setproctitle.c setproctitle.h \
-	../avahi-client/check-nss.c
+	../avahi-client/check-nss.c \
+	inotify-nosys.h
 
 avahi_daemon_CFLAGS = $(AM_CFLAGS) $(LIBDAEMON_CFLAGS)
 avahi_daemon_LDADD = $(AM_LDADD) ../avahi-common/libavahi-common.la ../avahi-core/libavahi-core.la $(LIBDAEMON_LIBS) -lexpat
@@ -70,7 +71,8 @@ pkgsysconf_DATA = \
 	hosts
 
 service_DATA = \
-	ssh.service
+	ssh.service \
+	sftp-ssh.service
 
 pkgdata_DATA = \
 	avahi-service.dtd
@@ -114,7 +116,7 @@ avahi_daemon_SOURCES += \
 avahi_daemon_LDADD += \
 	$(DBUS_LIBS)
 
-avahi_daemon_CFLAGS += $(DBUS_CFLAGS)
+avahi_daemon_CFLAGS += $(DBUS_CFLAGS) -DDBUS_SYSTEM_BUS_DEFAULT_ADDRESS=\"$(DBUS_SYSTEM_BUS_DEFAULT_ADDRESS)\"
 
 dbusservice_DATA = avahi-dbus.conf
 
@@ -148,6 +150,7 @@ EXTRA_DIST = \
 	HostNameResolver.introspect \
 	RecordBrowser.introspect \
 	ssh.service \
+	sftp-ssh.service \
 	hosts \
 	example.service \
 	introspect.dtd \

@@ -67,7 +67,11 @@ static void client_set_state (AvahiClient *client, AvahiServerState state) {
     switch (client->state) {
         case AVAHI_CLIENT_FAILURE:
             if (client->bus) {
+#ifdef HAVE_DBUS_CONNECTION_CLOSE
+                dbus_connection_close(client->bus);
+#else
                 dbus_connection_disconnect(client->bus);
+#endif
                 dbus_connection_unref(client->bus);
                 client->bus = NULL;
             }
@@ -437,12 +441,18 @@ static int init_server(AvahiClient *client, int *ret_error) {
 }
 
 /* This function acts like dbus_bus_get but creates a private
- * connection instead. Eventually this should be replaced by a DBUS
- * provided version. */
+ * connection instead.  */
 static DBusConnection* avahi_dbus_bus_get(DBusError *error) {
     DBusConnection *c;
-    const char *a;
 
+#ifdef HAVE_DBUS_BUS_GET_PRIVATE
+    if (!(c = dbus_bus_get_private(DBUS_BUS_SYSTEM, error)))
+        return NULL;
+    
+    dbus_connection_set_exit_on_disconnect(c, FALSE);
+#else
+    const char *a;
+    
     if (!(a = getenv("DBUS_SYSTEM_BUS_ADDRESS")) || !*a)
         a = DBUS_SYSTEM_BUS_DEFAULT_ADDRESS;
     
@@ -452,10 +462,15 @@ static DBusConnection* avahi_dbus_bus_get(DBusError *error) {
     dbus_connection_set_exit_on_disconnect(c, FALSE);
 
     if (!dbus_bus_register(c, error)) {
+#ifdef HAVE_DBUS_CONNECTION_CLOSE
         dbus_connection_close(c);
+#else
+        dbus_connection_disconnect(c);
+#endif
         dbus_connection_unref(c);
         return NULL;
     }
+#endif
 
     return c;
 }
@@ -598,7 +613,11 @@ void avahi_client_free(AvahiClient *client) {
     if (client->bus)
         /* Disconnect in advance, so that the free() functions won't
          * issue needless server calls */
+#ifdef HAVE_DBUS_CONNECTION_CLOSE
+        dbus_connection_close(client->bus);
+#else
         dbus_connection_disconnect(client->bus);
+#endif
     
     while (client->groups)
         avahi_entry_group_free(client->groups);
@@ -866,4 +885,59 @@ int avahi_client_is_connected(AvahiClient *client) {
         client->bus &&
         dbus_connection_get_is_connected(client->bus) &&
         (client->state == AVAHI_CLIENT_S_RUNNING || client->state == AVAHI_CLIENT_S_REGISTERING || client->state == AVAHI_CLIENT_S_COLLISION);
+}
+
+int avahi_client_set_host_name(AvahiClient* client, const char *name) {
+    DBusMessage *message = NULL, *reply = NULL;
+    DBusError error;
+
+    assert(client);
+    
+    if (!avahi_client_is_connected(client))
+        return avahi_client_set_errno(client, AVAHI_ERR_BAD_STATE);
+
+    dbus_error_init (&error);
+
+    if (!(message = dbus_message_new_method_call (AVAHI_DBUS_NAME, AVAHI_DBUS_PATH_SERVER, AVAHI_DBUS_INTERFACE_SERVER, "SetHostName"))) {
+        avahi_client_set_errno(client, AVAHI_ERR_NO_MEMORY);
+        goto fail;
+    }
+
+    if (!dbus_message_append_args (message, DBUS_TYPE_STRING, &name, DBUS_TYPE_INVALID)) {
+        avahi_client_set_errno (client, AVAHI_ERR_NO_MEMORY);
+        goto fail;
+    }
+    
+    reply = dbus_connection_send_with_reply_and_block(client->bus, message, -1, &error);
+
+    if (!reply || dbus_error_is_set (&error))
+        goto fail;
+
+    if (!dbus_message_get_args(reply, &error, DBUS_TYPE_INVALID) ||
+        dbus_error_is_set (&error))
+        goto fail;
+
+    dbus_message_unref(message);
+    dbus_message_unref(reply);
+
+    avahi_free(client->host_name);
+    client->host_name = NULL;
+    avahi_free(client->host_name_fqdn);
+    client->host_name_fqdn = NULL;
+    
+    return 0;
+
+fail:
+
+    if (message)
+        dbus_message_unref(message);
+    if (reply)
+        dbus_message_unref(reply);
+    
+    if (dbus_error_is_set(&error)) {
+        avahi_client_set_dbus_error(client, &error);
+        dbus_error_free(&error);
+    }
+
+    return client->error;
 }

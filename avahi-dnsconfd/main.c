@@ -393,9 +393,9 @@ static int parse_command_line(int argc, char *argv[]) {
         { "version",   no_argument,       NULL, 'V' },
         { "refresh",   no_argument,       NULL, 'r' },
         { "check",     no_argument,       NULL, 'c' },
+        { NULL, 0, NULL, 0 }
     };
 
-    opterr = 0;
     while ((c = getopt_long(argc, argv, "hDkVrc", long_options, NULL)) >= 0) {
 
         switch(c) {
@@ -418,7 +418,6 @@ static int parse_command_line(int argc, char *argv[]) {
                 command = DAEMON_CHECK;
                 break;
             default:
-                fprintf(stderr, "Invalid command line argument: %c\n", c);
                 return -1;
         }
     }
