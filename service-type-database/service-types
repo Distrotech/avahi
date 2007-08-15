@@ -24,7 +24,7 @@
 #
 #         http://www.dns-sd.org/ServiceTypes.html 
 #
-# is not a source that complies with the criterion!
+# which is not a source that complies with the criterion!
 
 ### This list is NOT intended to be used as developer
 ### documentation. If you're looking for the correct service type to
