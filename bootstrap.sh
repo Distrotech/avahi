@@ -57,6 +57,10 @@ case "$USER" in
     sebest)
     FLAGS="$FLAGS --disable-monodoc --enable-dbus=no --enable-mono=no --enable-qt3=no --enable-qt4=no  --sysconfdir=/etc --localstatedir=/var --prefix=/usr  --disable-manpages --disable-xmltoman"
     ;;
+    lucifred|flucifredi)
+    export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+    FLAGS="$FLAGS --disable-monodoc --enable-dbus=no --enable-mono=no --enable-qt3=no --enable-qt4=no  --sysconfdir=/etc --localstatedir=/var --prefix=/usr  --disable-manpages --disable-xmltoman"
+    ;;
 esac
 
 CFLAGS="$CFLAGS -g -O0" exec ./autogen.sh $FLAGS "$@"
