@@ -6,7 +6,7 @@ need to be run as root.
 Configure the build system:
 	$ ./configure --sysconfdir=/etc --localstatedir=/var
 
-Some configure options available:
+Some of the configure options available (the list is not comprehensive):
 
     --disable-gtk            disable GTK+ tools                (default: enabled)
     --disable-dbus           disable DBUS support              (default: enabled)
