@@ -44,7 +44,7 @@ typedef enum {
 } AvahiDNSServerType;
 
 /** Publish the specified unicast DNS server address via mDNS. You may
- * browse for records create this way with
+ * browse for records created this way with
  * avahi_s_dns_server_browser_new(). */
 int avahi_server_add_dns_server_address(
     AvahiServer *s,
