@@ -59,7 +59,7 @@ case "$USER" in
     ;;
     lucifred|flucifredi)
     export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
-    FLAGS="$FLAGS --disable-monodoc --enable-dbus=no --enable-mono=no --enable-qt3=no --enable-qt4=no  --sysconfdir=/etc --localstatedir=/var --prefix=/usr  --disable-manpages --disable-xmltoman"
+    FLAGS="$FLAGS --disable-monodoc --enable-dbus=yes --enable-mono=no --enable-qt3=no --enable-qt4=no  --sysconfdir=/etc --localstatedir=/var --prefix=/usr  --disable-manpages --disable-xmltoman"
     ;;
 esac
 
