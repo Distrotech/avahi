@@ -516,7 +516,7 @@ void avahi_goodbye_entry(AvahiServer *s, AvahiEntry *e, int send_goodbye, int re
     assert(e);
     
     /* tracing message for wide-area pub development */
-    printf("*** record of type %d named %s observed at exitpoint\n", e->record->key->type, e->record->key->name);
+    printf("--- record of type %d named %s observed at exitpoint\n", e->record->key->type, e->record->key->name);
 
     if (send_goodbye)
         if (!e->dead)
