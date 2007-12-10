@@ -41,6 +41,7 @@ typedef struct AvahiDnsPacket {
 
 AvahiDnsPacket* avahi_dns_packet_new(unsigned mtu);
 AvahiDnsPacket* avahi_dns_packet_new_query(unsigned mtu);
+AvahiDnsPacket* avahi_dns_packet_new_update(unsigned mtu);
 AvahiDnsPacket* avahi_dns_packet_new_response(unsigned mtu, int aa);
 
 AvahiDnsPacket* avahi_dns_packet_new_reply(AvahiDnsPacket* p, unsigned mtu, int copy_queries, int aa);
