@@ -105,8 +105,20 @@ typedef struct AvahiRecord {
             AvahiIPv6Address address;
         } aaaa; /**< Data for AAAA records */
 
+        struct {
+            char *algorithm_name;
+            uint48_t time_signed;
+            uint16_t fudge;
+            uint16_t mac_size;
+            char *mac;
+            uint16_t original_id;
+            uint16_t error;
+            uint16_t other_len;
+            char *other_data;
+        } tsig; /**< Data for TSIG records */
+
     } data; /**< Record data */
-    
+
 } AvahiRecord;
 
 /** Create a new AvahiKey object. The reference counter will be set to 1. */
