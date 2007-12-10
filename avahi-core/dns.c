@@ -74,6 +74,16 @@ AvahiDnsPacket* avahi_dns_packet_new_query(unsigned mtu) {
     return p;
 }
 
+AvahiDnsPacket* avahi_dns_packet_new_update(unsigned mtu) {
+    AvahiDnsPacket *p;
+
+    if (!(p = avahi_dns_packet_new(mtu)))
+        return NULL;
+
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_FLAGS, AVAHI_DNS_FLAGS(0, 5, 0, 0, 0, 0, 0, 0, 0, 0));
+    return p;
+}
+
 AvahiDnsPacket* avahi_dns_packet_new_response(unsigned mtu, int aa) {
     AvahiDnsPacket *p;
 
