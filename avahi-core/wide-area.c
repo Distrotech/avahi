@@ -721,5 +721,18 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
     return e->n_dns_servers > 0;
 }
 
+/* TODO: should this be located in this file? */
+AvahiRecord* tsig_sign_packet(AvahiDnsPacket *p, unsigned a) {
+    AvahiRecord *r;
+
+    r = avahi_record_new_full("TSIG", AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_TSIG, 0);
+
+    if (!r) {
+      avahi_log_error("avahi_record_new_full() failed.");
+        return NULL;
+    }
+
+    return r;
+}
 
     
