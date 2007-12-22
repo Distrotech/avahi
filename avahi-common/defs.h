@@ -277,7 +277,7 @@ typedef enum {
 /** In invalid cookie as special value */
 #define AVAHI_SERVICE_COOKIE_INVALID (0)
 
-/** DNS record types, see RFC 1035  and succeeding updates and extensions */
+/** DNS record types, see RFC 1035 */
 enum {
     AVAHI_DNS_TYPE_A = 0x01,
     AVAHI_DNS_TYPE_NS = 0x02,
@@ -288,8 +288,7 @@ enum {
     AVAHI_DNS_TYPE_MX = 0x0F,
     AVAHI_DNS_TYPE_TXT = 0x10,
     AVAHI_DNS_TYPE_AAAA = 0x1C,
-    AVAHI_DNS_TYPE_SRV = 0x21,
-    AVAHI_DNS_TYPE_TSIG = 0xFA,
+    AVAHI_DNS_TYPE_SRV = 0x21
 };
 
 /** DNS record classes, see RFC 1035 */
