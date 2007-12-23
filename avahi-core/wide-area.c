@@ -736,15 +736,15 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     r->ttl = 0;
 
-    r->data.name = avahi_strdup(name);
-    if(!(r->data.name) /* OOM check */
+    r->data.tsig.name = avahi_strdup(name);
+    if(!(r->data.tsig.name) /* OOM check */
        return NULL;
 
-    r->data.time_signed = time(null);
+    r->data.tsig.time_signed = time(null);
 
-    r->data.fudge = 300;
+    r->data.tsig.fudge = 300;
 
-    r->data.error = 0; /* no error, we are always transmitting */
+    r->data.tsig.error = 0; /* no error, we are always transmitting */
 
     switch (algorithm){
 
@@ -753,7 +753,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
                                    if(!(r->data.name) /* OOM check */
                                       return NULL;
 
-                                   r->data.mac_size = 16;
+                                   r->data.tsig.mac_size = 16;
 
                                    break;
 
