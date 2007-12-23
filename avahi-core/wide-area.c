@@ -748,7 +748,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     switch (algorithm){
 
-    case 'AVAHI_TSIG_HMAC_MD5':
+    case AVAHI_TSIG_HMAC_MD5   :
                                    r->data.tsig.algorithm_name = avahi_strdup("hmac-md5.sig-alg.reg.int");
                                    if(!(r->data.name) /* OOM check */
                                       return NULL;
@@ -757,10 +757,10 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
                                    break;
 
-    case 'AVAHI_TSIG_HMAC_SHA1':  /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+    case AVAHI_TSIG_HMAC_SHA1  :  /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
                                    break;
 
-    case 'AVAHI_TSIG_HMAC_SHA256': /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635 */
+    case AVAHI_TSIG_HMAC_SHA256: /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635 */
                                    break;
     default:   avahi_log_error("avahi_record_new_full() failed.");
                return NULL;
