@@ -722,14 +722,48 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 }
 
 /* TODO: should this be located in this file? */
-AvahiRecord* tsig_sign_packet(AvahiDnsPacket *p, unsigned a) {
+/* r = tsig_sign_packet("dynamic.endorfine.org", p, AVAHI_TSIG_HMAC_MD5) */
+/* check for NULL on return */
+AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algorithm) {
     AvahiRecord *r;
 
-    r = avahi_record_new_full("TSIG", AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_TSIG, 0);
+    r = avahi_record_new_full(name, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
     if (!r) {
       avahi_log_error("avahi_record_new_full() failed.");
         return NULL;
+    }
+
+    r->ttl = 0;
+
+    r->data.name = avahi_strdup(name);
+    if(!(r->data.name) /* OOM check */
+       return NULL;
+
+    r->data.time_signed = time(null);
+
+    r->data.fudge = 300;
+
+    r->data.error = 0; /* no error, we are always transmitting */
+
+    switch (algorithm){
+
+    case 'AVAHI_TSIG_HMAC_MD5':
+                                   r->data.tsig.algorithm_name = avahi_strdup("hmac-md5.sig-alg.reg.int");
+                                   if(!(r->data.name) /* OOM check */
+                                      return NULL;
+
+                                   r->data.mac_size = 16;
+
+                                   break;
+
+    case 'AVAHI_TSIG_HMAC_SHA1':  /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+                                   break;
+
+    case 'AVAHI_TSIG_HMAC_SHA256': /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635 */
+                                   break;
+    default:   avahi_log_error("avahi_record_new_full() failed.");
+               return NULL;
     }
 
     return r;

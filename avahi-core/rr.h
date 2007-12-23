@@ -43,6 +43,14 @@ enum {
     AVAHI_DNS_TYPE_AXFR = 252
 };
 
+/** TSIG signature algorithms, defined in RFCs 2845 and 4635 */
+
+enum {
+    AVAHI_TSIG_HMAC_MD5 = 0x1;
+    AVAHI_TSIG_HMAC_SHA1 = 0x2;
+    AVAHI_TSIG_HMAC_SHA256 = 0x3;
+};
+
 /** DNS record classes, see RFC 1035, in addition to those defined in defs.h */
 enum {
     AVAHI_DNS_CLASS_ANY = 0xFF,         /**< Special query type for requesting all records */
@@ -106,8 +114,9 @@ typedef struct AvahiRecord {
         } aaaa; /**< Data for AAAA records */
 
         struct {
+            char *name;
             char *algorithm_name;
-            char *time_signed; /*uint48_t */
+            time_t time_signed; /*uint48_t */
             uint16_t fudge;
             uint16_t mac_size;
             char *mac;
