@@ -741,7 +741,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
     if(!(r->data.tsig.name)) /* OOM check */
        return NULL;
 
-    r->data.tsig.time_signed = time(null);
+    r->data.tsig.time_signed = time(NULL);
 
     r->data.tsig.fudge = 300;
 
