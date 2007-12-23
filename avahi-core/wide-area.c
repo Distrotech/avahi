@@ -737,7 +737,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
     r->ttl = 0;
 
     r->data.tsig.name = avahi_strdup(name);
-    if(!(r->data.tsig.name) /* OOM check */
+    if(!(r->data.tsig.name)) /* OOM check */
        return NULL;
 
     r->data.tsig.time_signed = time(null);
@@ -750,7 +750,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     case AVAHI_TSIG_HMAC_MD5   :
                                    r->data.tsig.algorithm_name = avahi_strdup("hmac-md5.sig-alg.reg.int");
-                                   if(!(r->data.name) /* OOM check */
+                                   if(!(r->data.name)) /* OOM check */
                                       return NULL;
 
                                    r->data.tsig.mac_size = 16;
