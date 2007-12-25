@@ -44,7 +44,9 @@ void avahi_wide_area_set_servers(AvahiWideAreaLookupEngine *e, const AvahiAddres
 void avahi_wide_area_clear_cache(AvahiWideAreaLookupEngine *e);
 void avahi_wide_area_cleanup(AvahiWideAreaLookupEngine *e);
 int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e);
+
 AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPacket *p, unsigned algorithm);
+void wide_area_publish(AvahiRecord *r);
 
 AvahiWideAreaLookup *avahi_wide_area_lookup_new(AvahiWideAreaLookupEngine *e, AvahiKey *key, AvahiWideAreaLookupCallback callback, void *userdata);
 void avahi_wide_area_lookup_free(AvahiWideAreaLookup *q);
