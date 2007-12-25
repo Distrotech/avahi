@@ -776,3 +776,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPack
 
     return r;
 }
+
+/* TODO: should this be located in this file? */
+void wide_area_publish(AvahiRecord *r){
+}
