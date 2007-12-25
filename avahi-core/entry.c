@@ -225,6 +225,8 @@ static AvahiEntry * server_add_internal(
     /* may have to move lower into logic, for _new_ and _modified_ records only */
     printf("+++ record of type %d named %s observed at entrypoint\n", r->key->type, r->key->name);
 
+    printf("dummy MTU dump:%d",s->interface->hardware->mtu);
+
     /* sketch publishing function */
     wide_area_publish(r);
 

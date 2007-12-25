@@ -779,4 +779,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPack
 
 /* TODO: should this be located in this file? */
 void wide_area_publish(AvahiRecord *r){
+    AvahiDnsPacket *p;
+
+    /*p = avahi_dns_packet_new_update(s->interface->hardware->mtu);*/
 }
