@@ -723,12 +723,13 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 }
 
 /* TODO: should this be located in this file? */
-/* r = tsig_sign_packet("dynamic.endorfine.org", p, AVAHI_TSIG_HMAC_MD5) */
+/* fill key with HEX format key */
+/* r = tsig_sign_packet("dynamic.endorfine.org", key,  p, AVAHI_TSIG_HMAC_MD5) */
 /* check for NULL on return */
-AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algorithm) {
+AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPacket *p, unsigned algorithm) {
     AvahiRecord *r;
 
-    r = avahi_record_new_full(name, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
+    r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
     if (!r) {
       avahi_log_error("avahi_record_new_full() failed.");
@@ -737,7 +738,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     r->ttl = 0;
 
-    r->data.tsig.name = avahi_strdup(name);
+    r->data.tsig.name = avahi_strdup(keyname);
     if(!(r->data.tsig.name)) /* OOM check */
        return NULL;
 
@@ -753,7 +754,7 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     case AVAHI_TSIG_HMAC_MD5   :
                                    r->data.tsig.algorithm_name = avahi_strdup("hmac-md5.sig-alg.reg.int");
-                                   if(!(r->data.tsig.name)) /* OOM check */
+                                   if(!(r->data.tsig.algorithm_name)) /* OOM check */
                                       return NULL;
 
                                    r->data.tsig.mac_size = 16;
