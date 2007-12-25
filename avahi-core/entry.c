@@ -222,6 +222,7 @@ static AvahiEntry * server_add_internal(
                                      (flags & AVAHI_PUBLISH_UPDATE), AVAHI_ERR_BAD_STATE);
 
     /* tracing message for wide-area pub development */
+    /* may have to move lower into logic, for _new_ and _modified_ records only */
     printf("+++ record of type %d named %s observed at entrypoint\n", r->key->type, r->key->name);
 
     if (flags & AVAHI_PUBLISH_UPDATE) {
