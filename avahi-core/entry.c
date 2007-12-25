@@ -226,7 +226,7 @@ static AvahiEntry * server_add_internal(
     printf("+++ record of type %d named %s observed at entrypoint\n", r->key->type, r->key->name);
 
     /* sketch publishing function */
-    /*wide_area_publish(r);*/
+    /*wide_area_publish();*/
 
     if (flags & AVAHI_PUBLISH_UPDATE) {
         AvahiRecord *old_record;

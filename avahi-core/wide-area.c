@@ -784,9 +784,25 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
     AvahiKey *k;
 
     p = avahi_dns_packet_new_update(0); /* TODO: revisit MTU */
+    if (!p) { /*OOM check */
+      avahi_log_error("avahi_dns_packet_new_update() failed.");
+      assert();
+    }
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ID, id);
 
+    /*zone to be updated */
     k = avahi_key_new(zone, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_SOA);
+    if (!k) { /*OOM check */
+      avahi_log_error("avahi_key_new() failed.");
+      assert();
+    }
+
+    p = avahi_dns_packet_append_key(p, k, 0);
+
+    if (!p) { /*OOM check */
+      avahi_log_error("appending of rdata failed.");
+      assert();
+    }
 
 }
