@@ -747,6 +747,8 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     r->data.tsig.error = 0; /* no error, we are always transmitting */
 
+    r->data.tsig.original_id = 0; /* won't use, SHOULD match DNS transaction ID */
+
     switch (algorithm){
 
     case AVAHI_TSIG_HMAC_MD5   :
@@ -755,6 +757,10 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
                                       return NULL;
 
                                    r->data.tsig.mac_size = 16;
+
+                                   r->data.tsig.other_len = 0; /*no other data */
+
+                                   r->data.tsig.other_cata = NULL;
 
                                    break;
 
@@ -769,5 +775,3 @@ AvahiRecord* tsig_sign_packet(const char* name, AvahiDnsPacket *p, unsigned algo
 
     return r;
 }
-
-    
