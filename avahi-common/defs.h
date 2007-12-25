@@ -293,8 +293,7 @@ enum {
 
 /** DNS record classes, see RFC 1035 */
 enum {
-    AVAHI_DNS_CLASS_IN = 0x01,      /* used for mostly everything */
-    AVAHI_DNS_CLASS_ANY = 0xFF      /* TSIG records are class ANY */
+    AVAHI_DNS_CLASS_IN = 0x01      /* used for mostly everything */
 };
 
 /** The default TTL for RRs which contain a host name of some kind. */
