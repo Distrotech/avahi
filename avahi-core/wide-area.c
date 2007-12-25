@@ -761,7 +761,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPack
 
                                    r->data.tsig.other_len = 0; /*no other data */
 
-                                   r->data.tsig.other_cata = NULL;
+                                   r->data.tsig.other_data = NULL;
 
                                    break;
 
