@@ -791,18 +791,24 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ID, id);
 
-    /*zone to be updated */
+    /*SOA RR defining zone to be updated */
     k = avahi_key_new(zone, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_SOA);
+
     if (!k) { /*OOM check */
       avahi_log_error("avahi_key_new() failed.");
       assert();
     }
 
-    p = avahi_dns_packet_append_key(p, k, 0);
+    p = avahi_dns_packet_append_key(p, k, 0); /* add zone record */
+
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_QDCOUNT, 1); /*increment record count  for ZONE RR */
 
     if (!p) { /*OOM check */
       avahi_log_error("appending of rdata failed.");
       assert();
     }
+
+    if (!append_rdata(p,r)  /* add resource record */
+      assert();
 
 }
