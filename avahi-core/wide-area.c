@@ -778,7 +778,8 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPack
 }
 
 /* TODO: should this be located in this file? */
-/* call as wide_area_publish(<record>,"dynamic.endorfine.org", ) */
+/* call as wide_area_publish(<record>,"dynamic.endorfine.org",<id>) */
+/* can generate a temporary random ID via rand() / (RAND_MAX / 65536)
 void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
     AvahiDnsPacket *p;
     AvahiKey *k;
@@ -808,7 +809,7 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
-    avahi_dns_packet_append_record(p, r, 0, 30); /* TODO: revisit max TTL */
+    avahi_dns_packet_append_record(p, r, 0, 30); /* TODO: revisit max TTL from 30 */
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_NSCOUNT, 1); /*increment record count  for UPCOUNT */
 
