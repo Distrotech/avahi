@@ -779,7 +779,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPack
 
 /* TODO: should this be located in this file? */
 /* call as wide_area_publish(<record>,"dynamic.endorfine.org",<id>) */
-/* can generate a temporary random ID via rand() / (RAND_MAX / 65536)
+/* can generate a temporary random ID via rand() / (RAND_MAX / 65536) */
 void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
     AvahiDnsPacket *p;
     AvahiKey *k;
