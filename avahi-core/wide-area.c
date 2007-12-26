@@ -808,10 +808,13 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
-    if (!append_rdata(p,r)) { /* add resource record needing publication*/
+    avahi_dns_packet_append_record(p, r, 0, 30); /* TODO: revisit max TTL */
+
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_NSCOUNT, 1); /*increment record count  for UPCOUNT */
+
+    if (!p) { /*OOM check */
       avahi_log_error("appending of rdata failed.");
       assert(p);
     }
 
-    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_NSCOUNT, 1); /*increment record count  for UPCOUNT */
 }
