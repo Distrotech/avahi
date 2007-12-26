@@ -801,14 +801,17 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
 
     p = avahi_dns_packet_append_key(p, k, 0); /* add zone record */
 
-    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_QDCOUNT, 1); /*increment record count  for ZONE RR */
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_QDCOUNT, 1); /*increment record count  for ZOCOUNT */
 
     if (!p) { /*OOM check */
       avahi_log_error("appending of rdata failed.");
       assert();
     }
 
-    if (!append_rdata(p,r)  /* add resource record */
+    if (!append_rdata(p,r) { /* add resource record needing publication*/
+      avahi_log_error("appending of rdata failed.");
       assert();
+    }
 
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_NSCOUNT, 1); /*increment record count  for UPCOUNT */
 }
