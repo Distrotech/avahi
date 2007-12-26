@@ -802,7 +802,7 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
 
     avahi_dns_packet_append_key(p, k, 0); /* add zone record */
 
-    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_QDCOUNT, 1); /*increment record count  for ZOCOUNT */
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ZOCOUNT, 1); /*increment record count  for ZOCOUNT */
 
     if (!p) { /*OOM check */
       avahi_log_error("appending of rdata failed.");
@@ -810,8 +810,9 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
     }
 
     avahi_dns_packet_append_record(p, r, 0, 30); /* TODO: revisit max TTL from 30 */
+                                                 /* it may be useful to standardize TTLs independent of record for wide-area */
 
-    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_NSCOUNT, 1); /*increment record count  for UPCOUNT */
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_UPCOUNT, 1); /*increment record count  for UPCOUNT */
 
     if (!p) { /*OOM check */
       avahi_log_error("appending of rdata failed.");

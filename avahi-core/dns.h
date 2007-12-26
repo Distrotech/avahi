@@ -82,10 +82,21 @@ size_t avahi_dns_packet_space(AvahiDnsPacket *p);
 
 #define AVAHI_DNS_FIELD_ID 0
 #define AVAHI_DNS_FIELD_FLAGS 1
+
+/* DNS query/response packet field names */
+
 #define AVAHI_DNS_FIELD_QDCOUNT 2
 #define AVAHI_DNS_FIELD_ANCOUNT 3
 #define AVAHI_DNS_FIELD_NSCOUNT 4
 #define AVAHI_DNS_FIELD_ARCOUNT 5
+
+/* DNS update packet field names */
+
+#define AVAHI_DNS_FIELD_ZOCOUNT 2
+#define AVAHI_DNS_FIELD_PRCOUNT 3
+#define AVAHI_DNS_FIELD_UPCOUNT 4
+#define AVAHI_DNS_FIELD_ADCOUNT 5
+
 
 #define AVAHI_DNS_FLAG_QR (1 << 15)
 #define AVAHI_DNS_FLAG_OPCODE (15 << 11)
