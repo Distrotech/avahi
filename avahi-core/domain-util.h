@@ -45,6 +45,9 @@ int avahi_domain_ends_with(const char *domain, const char *suffix);
 /** returns canonical DNS representation of C string representing a domain */
 char * c_to_canonical_string(char* input);
 
+/** returns canonical wire representation of uint16 */
+char * uint16_to_canonical_string(uint16_t v);
+
 AVAHI_C_DECL_END
 
 #endif

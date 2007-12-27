@@ -225,12 +225,12 @@ static AvahiEntry * server_add_internal(
     /* may have to move lower into logic, for _new_ and _modified_ records only */
     printf("+++ record of type %d named %s observed at entrypoint\n", r->key->type, r->key->name);
 
-    if (r->key->type == 12 || r->key->type == 2 || r->key->type == 5)
+  /*if (r->key->type == 12 || r->key->type == 2 || r->key->type == 5)
        {
         printf("c-style: \"%s\"\n", r->data.ptr.name);
         printf("canonical: \"%s\"\n", c_to_canonical_string(r->data.ptr.name));
         printf("length: \"%d\"\n", (char)strlen(c_to_canonical_string(r->data.ptr.name)));
-        }
+        }*/
 
     /*wide_area_publish();*/
 

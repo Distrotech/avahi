@@ -731,9 +731,11 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm) {
     AvahiRecord *r;
 
-    unsigned char keyed_hash[EVP_MAX_MD_SIZE];
+    unsigned char keyed_hash[EVP_MAX_MD_SIZE]; /*used for signing */
     HMAC_CTX ctx;
     unsigned hash_length;
+
+    char canonic[AVAHI_DOMAIN_NAME_MAX]; /*used in conversions */
 
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
@@ -802,8 +804,14 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
 
     /*feed all the data to be hashed in */
     /*HMAC_Update(&ctx, <data/>, <length/>);*/
-    HMAC_Update(&ctx, p->data, p->size);
-    /* HMAC_Update(&ctx, CONTINUE */
+    HMAC_Update(&ctx, p->data, p->size); /*packet in wire format*/
+
+    canonic = c_to_canonical_string(keyname);
+    HMAC_Update(&ctx, canonic, strlen(canonic) +1); /* key name in canonical wire format */
+
+    HMAC_Update(&ctx, uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class */
+/*    HMAC_Update(&ctx,
+    HMAC_Update(&ctx, */
 
     HMAC_Final(&ctx, keyed_hash, &hash_length);
     HMAC_cleanup(&ctx);

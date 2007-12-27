@@ -188,6 +188,7 @@ int avahi_domain_ends_with(const char *domain, const char *suffix) {
     } 
 }
 
+/*todo: revise location of this function in this file vs domain.c (and.h) */
 char * c_to_canonical_string(char* input)
     {
         char *label = avahi_malloc(AVAHI_LABEL_MAX);
@@ -223,3 +224,10 @@ char * c_to_canonical_string(char* input)
        return retval;
     }
 
+char * uint16_to_canonical_string(uint16_t v) {
+    uint8_t *c = avahi_malloc(2);
+
+    c[0] = (uint8_t) (v >> 8);
+    c[1] = (uint8_t) v;
+    return c;
+}
