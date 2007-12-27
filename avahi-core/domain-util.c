@@ -249,7 +249,7 @@ unsigned char * time_t_to_canonical_string(time_t v) {
     c[0] = (uint8_t) (v >> 40);
     c[1] = (uint8_t) (v >> 32);
     c[2] = (uint8_t) (v >> 24);
-    c[3] = (uint8_t) (v >> 16)
+    c[3] = (uint8_t) (v >> 16);
     c[4] = (uint8_t) (v >> 8);
     c[5] = (uint8_t) v;
 
