@@ -800,7 +800,10 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
                return NULL;
     }
 
-    /*HMAC_Update(&ctx, <data/>, <length/>);*/ /*feed all the data to be hashed in */
+    /*feed all the data to be hashed in */
+    /*HMAC_Update(&ctx, <data/>, <length/>);*/
+    HMAC_Update(&ctx, p->data, p->size);
+    /* HMAC_Update(&ctx, CONTINUE */
 
     HMAC_Final(&ctx, keyed_hash, &hash_length);
     HMAC_cleanup(&ctx);

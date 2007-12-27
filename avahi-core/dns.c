@@ -193,8 +193,8 @@ uint8_t* avahi_dns_packet_append_name(AvahiDnsPacket *p, const char *name) {
                 if (!(t = (uint8_t*) avahi_dns_packet_extend(p, sizeof(uint16_t))))
                     return NULL;
 
-		t[0] = (uint8_t) ((0xC000 | idx) >> 8);
-		t[1] = (uint8_t) idx;
+                t[0] = (uint8_t) ((0xC000 | idx) >> 8);
+                t[1] = (uint8_t) idx;
                 return saved_ptr;
             }
         }
