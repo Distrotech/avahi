@@ -226,11 +226,25 @@ static AvahiEntry * server_add_internal(
     printf("+++ record of type %d named %s observed at entrypoint\n", r->key->type, r->key->name);
 
     if (r->key->type == 12 || r->key->type == 2 || r->key->type == 5)
+       {
         printf("result: -%s-\n", r->data.ptr.name);
-    /*char *in = avahi_strdup("foo.com");
-    char out[100];
-    avahi_unescape_label(&in, out, 100);
-    printf("result: -%s-\n", out);*/
+
+        char label[AVAHI_LABEL_MAX];
+        char result[AVAHI_DOMAIN_NAME_MAX];
+        char *p = result;
+
+        char *in = r->data.ptr.name;
+
+        while(avahi_unescape_label(&in, label, 255))
+            {
+             result++ = strlen(out);
+
+             while(*out)
+                result++ = out++;
+            }
+
+        printf("result: -%s-\n", result);*/
+       }
 
 
     /* sketch publishing function */
