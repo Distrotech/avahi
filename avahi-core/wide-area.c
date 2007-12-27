@@ -730,7 +730,7 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 /* fill key with HEX format key */
 /* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5) */
 /* check for NULL on return */
-AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm) {
+AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm) {
     AvahiRecord *r;
 
     unsigned char keyed_hash[EVP_MAX_MD_SIZE]; /*used for signing */
@@ -818,7 +818,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
     canonic = c_to_canonical_string(r->data.tsig.algorithm_name); /* IANA algorithm name in canonical wire format (DNS labels)*/
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
 
-    HMAC_Update(&ctx, time_t_to_canonical_string(time_t v), 6); /*uint48 representation of unix time */
+    HMAC_Update(&ctx, time_t_to_canonical_string(r->data.tsig.time_signed), 6); /*uint48 representation of unix time */
 
     HMAC_Update(&ctx, uint16_to_canonical_string(r->data.tsig.fudge), 2);
 

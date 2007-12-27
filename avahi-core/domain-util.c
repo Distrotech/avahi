@@ -189,7 +189,7 @@ int avahi_domain_ends_with(const char *domain, const char *suffix) {
 }
 
 /*todo: revise location of this function in this file vs domain.c (and.h) */
-unsigned char * c_to_canonical_string(char* input)
+unsigned char * c_to_canonical_string(const char* input)
     {
         char *label = avahi_malloc(AVAHI_LABEL_MAX);
         char *retval = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
