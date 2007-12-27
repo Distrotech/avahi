@@ -34,6 +34,8 @@
 #include <avahi-common/error.h>
 #include <avahi-common/timeval.h>
 
+#include <openssl/hmac.h>
+
 #include "internal.h"
 #include "browse.h"
 #include "socket.h"
@@ -724,9 +726,9 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 
 /* TODO: should this be located in this file? */
 /* fill key with HEX format key */
-/* r = tsig_sign_packet("dynamic.endorfine.org", key,  p, AVAHI_TSIG_HMAC_MD5) */
+/* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5) */
 /* check for NULL on return */
-AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPacket *p, unsigned algorithm) {
+AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm) {
     AvahiRecord *r;
 
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
@@ -770,9 +772,40 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, AvahiDnsPack
 
     case AVAHI_TSIG_HMAC_SHA256: /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635 */
                                    break;
-    default:   avahi_log_error("avahi_record_new_full() failed.");
+
+    default:   avahi_log_error("Invalid algorithm requested from tsig_sign_packet()");
                return NULL;
     }
+
+    /*generate MAC */
+
+    unsigned char keyed_hash[EVP_MAX_MD_SIZE];
+    HMAC_CTX ctx;
+    unsigned hash_length;
+
+    switch (algorithm){
+
+    case AVAHI_TSIG_HMAC_MD5   :   HMAC_Init(&ctx, key, keylength, EVP_md5());
+                                   break;
+
+    case AVAHI_TSIG_HMAC_SHA1  :   /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+                                   HMAC_Init(&ctx, key, keylength, EVP_sha1());
+                                   break;
+
+    case AVAHI_TSIG_HMAC_SHA256:   /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+                                   HMAC_Init(&ctx, key, keylength, EVP_sha256());
+                                   break;
+
+    default:   avahi_log_error("Invalid algorithm requested from tsig_sign_packet()");
+               return NULL;
+    }
+
+    /*HMAC_Update(&ctx, <data/>, <length/>);*/ /*feed all the data to be hashed in */
+
+    HMAC_Final((&ctx, keyed_hash, &hash_length);
+    HMAC_cleanup(&ctx);
+
+    r->data.tsig.mac = avahi_strndup(keyed_hash, hash_length);
 
     return r;
 }
@@ -818,5 +851,7 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       avahi_log_error("appending of rdata failed.");
       assert(p);
     }
+
+
 
 }
