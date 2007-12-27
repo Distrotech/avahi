@@ -237,10 +237,10 @@ static AvahiEntry * server_add_internal(
 
         while(avahi_unescape_label(&in, label, 255))
             {
-             result++ = strlen(label);
+             p++ = strlen(label);
 
              while(*label)
-                result++ = label++;
+                p++ = label++;
             }
 
         printf("result: -%s-\n", result);*/
