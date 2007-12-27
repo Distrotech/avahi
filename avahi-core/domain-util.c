@@ -202,7 +202,7 @@ char * c_to_canonical_string(char* input)
                 *result = *label;
                 result++;
                 label++;
-             } while(*label)
+             } while(*label);
 
             printf("intermediate result: -%s-\n", result);*/
             }
