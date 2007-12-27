@@ -195,10 +195,13 @@ char * c_to_canonical_string(char* input)
 
         while(avahi_unescape_label(&input, label, AVAHI_LABEL_MAX))
             {
-             result++ = strlen(label);
+             *result = (char)strlen(label);
+             result++;
 
              do {
-                result++ = label++;
+                *result = *label;
+                result++;
+                label++;
              } while(*label)
 
             printf("intermediate result: -%s-\n", result);*/
