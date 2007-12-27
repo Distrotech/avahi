@@ -225,7 +225,7 @@ static AvahiEntry * server_add_internal(
     /* may have to move lower into logic, for _new_ and _modified_ records only */
     printf("+++ record of type %d named %s observed at entrypoint\n", r->key->type, r->key->name);
 
-    char in[] = "foo.com";
+    char *in[] = avahi_strdup("foo.com");
     char out[100];
     avahi_unescape_label(&in, out, 100);
     printf("result: -%s-\n", out);
