@@ -227,8 +227,8 @@ static AvahiEntry * server_add_internal(
 
     if (r->key->type == 12 || r->key->type == 2 || r->key->type == 5)
        {
-        printf("result: -%s-\n", r->data.ptr.name);
-        printf("canonical: -%s-\n", c_to_canonical_string(r->data.ptr.name));
+        printf("c-style: \"%s\"\n", r->data.ptr.name);
+        printf("canonical: \"%s\"\n", c_to_canonical_string(r->data.ptr.name));
         }
 
     /*wide_area_publish();*/
