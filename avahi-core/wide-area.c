@@ -731,6 +731,10 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm) {
     AvahiRecord *r;
 
+    unsigned char keyed_hash[EVP_MAX_MD_SIZE];
+    HMAC_CTX ctx;
+    unsigned hash_length;
+
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
     if (!r) {
@@ -779,10 +783,6 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
 
     /*generate MAC */
 
-    unsigned char keyed_hash[EVP_MAX_MD_SIZE];
-    HMAC_CTX ctx;
-    unsigned hash_length;
-
     switch (algorithm){
 
     case AVAHI_TSIG_HMAC_MD5   :   HMAC_Init(&ctx, key, keylength, EVP_md5());
@@ -802,7 +802,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
 
     /*HMAC_Update(&ctx, <data/>, <length/>);*/ /*feed all the data to be hashed in */
 
-    HMAC_Final((&ctx, keyed_hash, &hash_length);
+    HMAC_Final(&ctx, keyed_hash, &hash_length);
     HMAC_cleanup(&ctx);
 
     r->data.tsig.mac = avahi_strndup(keyed_hash, hash_length);
