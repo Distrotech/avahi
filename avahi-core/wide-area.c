@@ -737,7 +737,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
     HMAC_CTX ctx;
     unsigned hash_length;
 
-    char canonic[AVAHI_DOMAIN_NAME_MAX]; /*used in conversions */
+    char *canonic; /*used in conversions */
 
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
@@ -809,7 +809,7 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
     HMAC_Update(&ctx, (unsigned char *)p->data, (unsigned int)p->size); /*packet in wire format*/
 
     canonic = c_to_canonical_string(keyname);
-    HMAC_Update(&ctx, &canonic, strlen(canonic) +1); /* key name in canonical wire format */
+    HMAC_Update(&ctx, canonic, strlen(canonic) +1); /* key name in canonical wire format */
 
     HMAC_Update(&ctx, uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class */
 /*    HMAC_Update(&ctx,
