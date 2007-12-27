@@ -239,7 +239,7 @@ static AvahiEntry * server_add_internal(
             {
              result++ = strlen(label);
 
-             while(*out)
+             while(*label)
                 result++ = label++;
             }
 
