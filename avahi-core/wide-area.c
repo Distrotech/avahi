@@ -34,6 +34,7 @@
 #include <avahi-common/error.h>
 #include <avahi-common/timeval.h>
 #include <avahi-common/domain.h>
+#include <avahi-common/domain-util.h>
 
 #include <openssl/hmac.h>
 
@@ -805,10 +806,10 @@ AvahiRecord* tsig_sign_packet(const char* keyname, const char* key, unsigned key
 
     /*feed all the data to be hashed in */
     /*HMAC_Update(&ctx, <data/>, <length/>);*/
-    HMAC_Update(&ctx, p->data, p->size); /*packet in wire format*/
+    HMAC_Update(&ctx, (unsigned char *)p->data, (unsigned int)p->size); /*packet in wire format*/
 
     canonic = c_to_canonical_string(keyname);
-    HMAC_Update(&ctx, canonic, strlen(canonic) +1); /* key name in canonical wire format */
+    HMAC_Update(&ctx, &canonic, strlen(canonic) +1); /* key name in canonical wire format */
 
     HMAC_Update(&ctx, uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class */
 /*    HMAC_Update(&ctx,
