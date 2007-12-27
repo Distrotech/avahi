@@ -826,7 +826,7 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
     HMAC_Update(&ctx, uint16_to_canonical_string(r->data.tsig.other_len), 2);
 
-    HMAC_Update(&ctx, r->data.tsig.other_data, other_len); /* should work if other_len =0 can be passed to the HMAC */
+    HMAC_Update(&ctx, r->data.tsig.other_data, r->data.tsig.other_len); /* should work if other_len =0 can be passed to the HMAC */
 
     HMAC_Final(&ctx, keyed_hash, &hash_length);
     HMAC_cleanup(&ctx);
