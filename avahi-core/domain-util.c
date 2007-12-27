@@ -191,25 +191,35 @@ int avahi_domain_ends_with(const char *domain, const char *suffix) {
 char * c_to_canonical_string(char* input)
     {
         char *label = avahi_malloc(AVAHI_LABEL_MAX);
-        char *result = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
+        char *retval = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
+        char *result = retval;
 
-        while(avahi_unescape_label(&input, label, AVAHI_LABEL_MAX))
+        /* printf("invoked with: -%s-\n", input); */
+
+        for(;;)
             {
+             avahi_unescape_label(&input, label, AVAHI_LABEL_MAX);
+
+             if(!(*label))
+                break;
+
              *result = (char)strlen(label);
+             /* printf("label length: -%d-\n", *result); */
+
              result++;
 
-             do {
-                *result = *label;
-                result++;
-                label++;
-             } while(*label);
+             /*printf("label: -%s-\n", label); */
 
-            printf("intermediate result: -%s-\n", result);
+             strcpy(result, label);
+             result += (char)strlen(label);
+
+             /* printf("intermediate result: -%s-\n", retval); */
             }
 
-        printf("result: -%s-\n", result);
+       /* printf("result: -%s-\n", retval);
+          printf("result length: -%d-\n", (char)strlen(retval)); */
 
        avahi_free(label);
-       return result;
+       return retval;
     }
 
