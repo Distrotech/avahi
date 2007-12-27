@@ -227,7 +227,7 @@ static AvahiEntry * server_add_internal(
 
     char[100] out;
     int out_len = 100;
-    avahi_unescape_label("foo.com", 8, &out, &out_len);
+    avahi_escape_label("foo.com", 8, &out, &out_len);
     printf("result: -%s-\n", out);
 
     /* sketch publishing function */
