@@ -34,7 +34,7 @@
 #include <avahi-common/error.h>
 #include <avahi-common/timeval.h>
 #include <avahi-common/domain.h>
-#include <avahi-common/domain-util.h>
+#include <avahi-core/domain-util.h>
 
 #include <openssl/hmac.h>
 
