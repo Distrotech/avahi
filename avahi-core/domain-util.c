@@ -208,7 +208,6 @@ char * c_to_canonical_string(char* input)
             }
 
         printf("result: -%s-\n", result);
-       }
 
        avahi_free(label);
        return result;
