@@ -229,7 +229,7 @@ static AvahiEntry * server_add_internal(
        {
         printf("c-style: \"%s\"\n", r->data.ptr.name);
         /*printf("canonical: \"%s\"\n", c_to_canonical_string(r->data.ptr.name));*/
-        printf("canonical: \"%s\"\n", avahi_normalize_name_strdup(const char *s));
+        printf("canonical: \"%s\"\n", avahi_normalize_name_strdup(r->data.ptr.name));
         }
 
     /*wide_area_publish();*/
