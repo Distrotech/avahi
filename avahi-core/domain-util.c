@@ -204,10 +204,10 @@ char * c_to_canonical_string(char* input)
                 label++;
              } while(*label);
 
-            printf("intermediate result: -%s-\n", result);*/
+            printf("intermediate result: -%s-\n", result);
             }
 
-        printf("result: -%s-\n", result);*/
+        printf("result: -%s-\n", result);
        }
 
        avahi_free(label);
