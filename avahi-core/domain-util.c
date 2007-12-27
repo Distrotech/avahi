@@ -188,3 +188,26 @@ int avahi_domain_ends_with(const char *domain, const char *suffix) {
     } 
 }
 
+char * c_to_canonical_string(char* input)
+    {
+        char *label = avahi_malloc(AVAHI_LABEL_MAX);
+        char *result = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
+
+        while(avahi_unescape_label(&input, label, AVAHI_LABEL_MAX))
+            {
+             result++ = strlen(label);
+
+             do {
+                result++ = label++;
+             } while(*label)
+
+            printf("intermediate result: -%s-\n", result);*/
+            }
+
+        printf("result: -%s-\n", result);*/
+       }
+
+       avahi_free(label);
+       return result;
+    }
+

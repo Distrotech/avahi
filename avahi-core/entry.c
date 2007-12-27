@@ -228,26 +228,9 @@ static AvahiEntry * server_add_internal(
     if (r->key->type == 12 || r->key->type == 2 || r->key->type == 5)
        {
         printf("result: -%s-\n", r->data.ptr.name);
+        printf("canonical: -%s-\n", c_to_canonical_string(r->data.ptr.name));
+        }
 
-        char label[AVAHI_LABEL_MAX];
-        char result[AVAHI_DOMAIN_NAME_MAX];
-        char *p = result;
-
-        char *in = r->data.ptr.name;
-
-        while(avahi_unescape_label(&in, label, 255))
-            {
-             p++ = strlen(label);
-
-             while(*label)
-                p++ = label++;
-            }
-
-        printf("result: -%s-\n", result);*/
-       }
-
-
-    /* sketch publishing function */
     /*wide_area_publish();*/
 
     if (flags & AVAHI_PUBLISH_UPDATE) {
