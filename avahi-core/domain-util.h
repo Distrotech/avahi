@@ -51,6 +51,9 @@ char * uint16_to_canonical_string(uint16_t v);
 /** returns canonical wire representation of uint32 */
 char * uint32_to_canonical_string(uint32_t v);
 
+/** returns canonical wire representation of time_t as an uint48 */
+char * time_t_to_canonical_string(time_t v);
+
 AVAHI_C_DECL_END
 
 #endif

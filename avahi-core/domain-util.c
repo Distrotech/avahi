@@ -243,3 +243,15 @@ char * uint32_to_canonical_string(uint32_t v) {
     return c;
 }
 
+char * time_t_to_canonical_string(time_t v) {
+    uint8_t *c = avahi_malloc(6);
+
+    c[0] = (uint8_t) (v >> 40);
+    c[1] = (uint8_t) (v >> 32);
+    c[2] = (uint8_t) (v >> 24);
+    c[3] = (uint8_t) (v >> 16)
+    c[4] = (uint8_t) (v >> 8);
+    c[5] = (uint8_t) v;
+
+    return c;
+}
