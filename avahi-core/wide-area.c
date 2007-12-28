@@ -843,6 +843,14 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
     AvahiDnsPacket *p;
     AvahiKey *k;
 
+    AvahiRecord *tsig;
+
+    /* TODO: in merged version into upstream, key needs to be an external configurable pulled from /etc */
+    static const char key[16] = { 0x12, 0xa6, 0x05, 0xcc, 0x38, 0xf9, 0x1f, 0x1e,
+                                  0x24, 0x21, 0x6c, 0xa4, 0xd0, 0x1e, 0x88, 0x38 };
+
+    /* TODO: revisit record for wide-area - change ".local" and IPaddr as appropriate */
+
     p = avahi_dns_packet_new_update(0); /* TODO: revisit MTU */
     if (!p) { /*OOM check */
       avahi_log_error("avahi_dns_packet_new_update() failed.");
@@ -878,6 +886,25 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
+    /* get it MAC signed */
+    tsig = tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5);
+    /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm) */
 
+    if (!tsig) { /*OOM check */
+      avahi_log_error("tsig record generation failed.");
+      assert(tsig);
+    }
+
+    /* append TSIG record - note the RR group it goes into! */
+    avahi_dns_packet_append_record(p, tsig, 0, 30); /* TODO: revisit max TTL from 30 */
+
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ADCOUNT, 1); /*increment record count  for ADCOUNT */
+
+    if (!p) { /*OOM check */
+      avahi_log_error("appending of rdata failed.");
+      assert(p);
+    }
+
+    /*TODO: put packet on the wire */
 
 }
