@@ -886,7 +886,7 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
-    /* get it MAC signed */
+    /* get it MAC signed */ /*FIXME: need to correct the original ID! */
     tsig = tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5);
     /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm) */
 
