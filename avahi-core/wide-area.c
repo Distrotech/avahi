@@ -727,10 +727,9 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 }
 
 /* TODO: should this be located in this file? */
-/* fill key with HEX format key */
-/* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5) */
+/* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5, id) */
 /* check for NULL on return */
-AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm) {
+AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm, unsigned id) {
     AvahiRecord *r;
 
     unsigned char keyed_hash[EVP_MAX_MD_SIZE]; /*used for signing */
@@ -748,17 +747,13 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
     r->ttl = 0;
 
-    r->data.tsig.name = avahi_strdup(keyname);
-    if(!(r->data.tsig.name)) /* OOM check */
-       return NULL;
-
     r->data.tsig.time_signed = time(NULL);
 
     r->data.tsig.fudge = 300;
 
     r->data.tsig.error = 0; /* no error, we are always transmitting */
 
-    r->data.tsig.original_id = 0; /* won't use, SHOULD match DNS transaction ID */
+    r->data.tsig.original_id = id; /* MUST  match DNS transaction ID, but it is not hashed */
 
     switch (algorithm){
 
@@ -775,13 +770,33 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
                                    break;
 
-    case AVAHI_TSIG_HMAC_SHA1  :  /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+    case AVAHI_TSIG_HMAC_SHA1  :  /* Requires BIND 9.4 that now implements RFC 4635 (formerly the Eastlake draft)*/
+                                   r->data.tsig.algorithm_name = avahi_strdup("hmac-sha1");
+                                   if(!(r->data.tsig.algorithm_name)) /* OOM check */
+                                      return NULL;
+
+                                   r->data.tsig.mac_size = 20;
+
+                                   r->data.tsig.other_len = 0; /*no other data */
+
+                                   r->data.tsig.other_data = NULL;
+
                                    break;
 
-    case AVAHI_TSIG_HMAC_SHA256: /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635 */
+    case AVAHI_TSIG_HMAC_SHA256:  /* Requires BIND 9.4 that now implements RFC 4635 (formerly the Eastlake draft)*/
+                                   r->data.tsig.algorithm_name = avahi_strdup("hmac-sha256");
+                                   if(!(r->data.tsig.algorithm_name)) /* OOM check */
+                                      return NULL;
+
+                                   r->data.tsig.mac_size = 32;
+
+                                   r->data.tsig.other_len = 0; /*no other data */
+
+                                   r->data.tsig.other_data = NULL;
+
                                    break;
 
-    default:   avahi_log_error("Invalid algorithm requested from tsig_sign_packet()");
+    default:   avahi_log_error("Unknown algorithm requested from tsig_sign_packet()");
                return NULL;
     }
 
@@ -792,11 +807,11 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
     case AVAHI_TSIG_HMAC_MD5   :   HMAC_Init(&ctx, key, keylength, EVP_md5());
                                    break;
 
-    case AVAHI_TSIG_HMAC_SHA1  :   /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+    case AVAHI_TSIG_HMAC_SHA1  :   /* New from RFC 4635*/
                                    HMAC_Init(&ctx, key, keylength, EVP_sha1());
                                    break;
 
-    case AVAHI_TSIG_HMAC_SHA256:   /*TODO: flesh specific. Test with latest Bind that now implements RFC 4635*/
+    case AVAHI_TSIG_HMAC_SHA256:   /* New from RFC 4635*/
                                    HMAC_Init(&ctx, key, keylength, EVP_sha256());
                                    break;
 
@@ -826,8 +841,8 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
     HMAC_Update(&ctx, uint16_to_canonical_string(r->data.tsig.other_len), 2);
 
-    HMAC_Update(&ctx, r->data.tsig.other_data, r->data.tsig.other_len); /* should work if other_len =0 can be passed to the HMAC */
-
+    HMAC_Update(&ctx, r->data.tsig.other_data, r->data.tsig.other_len); /* should still work if other_len =0 can be passed to the HMAC */
+                                                                        /* but no standard cypher uses this to date */
     HMAC_Final(&ctx, keyed_hash, &hash_length);
     HMAC_cleanup(&ctx);
 
@@ -876,8 +891,12 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
-    avahi_dns_packet_append_record(p, r, 0, 30); /* TODO: revisit max TTL from 30 */
-                                                 /* it may be useful to standardize TTLs independent of record for wide-area */
+    if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
+        avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
+    } else {
+        avahi_dns_packet_append_record(p, r, 0, 3); /* bind max TTL to 3 secs */
+    }
+
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_UPCOUNT, 1); /*increment record count  for UPCOUNT */
 
@@ -886,9 +905,9 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
-    /* get it MAC signed */ /*FIXME: need to correct the original ID! */
-    tsig = tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5);
-    /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm) */
+    /* get it MAC signed */
+    tsig = tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
+    /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm, id) */
 
     if (!tsig) { /*OOM check */
       avahi_log_error("tsig record generation failed.");

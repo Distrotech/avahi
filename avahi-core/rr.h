@@ -114,7 +114,6 @@ typedef struct AvahiRecord {
         } aaaa; /**< Data for AAAA records */
 
         struct {
-            char *name;
             char *algorithm_name;
             time_t time_signed; /*uint48_t */
             uint16_t fudge;
