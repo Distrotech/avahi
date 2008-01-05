@@ -729,7 +729,7 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 /* TODO: should this be located in this file? */
 /* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5, id) */
 /* check for NULL on return */
-AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm, unsigned id) {
+AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm, uint16_t id) {
     AvahiRecord *r;
 
     unsigned char keyed_hash[EVP_MAX_MD_SIZE]; /*used for signing */
@@ -753,7 +753,7 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
     r->data.tsig.error = 0; /* no error, we are always transmitting */
 
-    r->data.tsig.original_id = id; /* MUST  match DNS transaction ID, but it is not hashed */
+    r->data.tsig.original_id = id; /* MUST match DNS transaction ID, but it is not hashed */
 
     switch (algorithm){
 
@@ -914,8 +914,8 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(tsig);
     }
 
-    /* append TSIG record - note the RR group it goes into! */
-    avahi_dns_packet_append_record(p, tsig, 0, 30); /* TODO: revisit max TTL from 30 */
+    /* append TSIG record - note the RRset it goes into! */
+    avahi_dns_packet_append_record(p, tsig, 0, 30); /* NOTE: max TTL irrelevant, record comes with a 0 TTL */
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ADCOUNT, 1); /*increment record count  for ADCOUNT */
 
