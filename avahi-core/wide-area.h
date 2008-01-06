@@ -35,6 +35,67 @@ typedef void (*AvahiWideAreaLookupCallback)(
     AvahiRecord *r,
     void *userdata);
 
+typedef struct AvahiWideAreaCacheEntry AvahiWideAreaCacheEntry;
+
+struct AvahiWideAreaCacheEntry {
+    AvahiWideAreaLookupEngine *engine;
+
+    AvahiRecord *record;
+    struct timeval timestamp;
+    struct timeval expiry;
+
+    AvahiTimeEvent *time_event;
+
+    AVAHI_LLIST_FIELDS(AvahiWideAreaCacheEntry, by_key);
+    AVAHI_LLIST_FIELDS(AvahiWideAreaCacheEntry, cache);
+};
+
+struct AvahiWideAreaLookup {
+    AvahiWideAreaLookupEngine *engine;
+    int dead;
+
+    uint32_t id;  /* effectively just an uint16_t, but we need it as an index for a hash table */
+    AvahiTimeEvent *time_event;
+
+    AvahiKey *key, *cname_key;
+
+    int n_send;
+    AvahiDnsPacket *packet;
+
+    AvahiWideAreaLookupCallback callback;
+    void *userdata;
+
+    AvahiAddress dns_server_used;
+
+    AVAHI_LLIST_FIELDS(AvahiWideAreaLookup, lookups);
+    AVAHI_LLIST_FIELDS(AvahiWideAreaLookup, by_key);
+};
+
+struct AvahiWideAreaLookupEngine {
+    AvahiServer *server;
+
+    int fd_ipv4, fd_ipv6;
+    AvahiWatch *watch_ipv4, *watch_ipv6;
+
+    uint16_t next_id;
+
+    /* Cache */
+    AVAHI_LLIST_HEAD(AvahiWideAreaCacheEntry, cache);
+    AvahiHashmap *cache_by_key;
+    unsigned cache_n_entries;
+
+    /* Lookups */
+    AVAHI_LLIST_HEAD(AvahiWideAreaLookup, lookups);
+    AvahiHashmap *lookups_by_id;
+    AvahiHashmap *lookups_by_key;
+
+    int cleanup_dead;
+
+    AvahiAddress dns_servers[AVAHI_WIDE_AREA_SERVERS_MAX];
+    unsigned n_dns_servers;
+    unsigned current_dns_server;
+};
+
 AvahiWideAreaLookupEngine *avahi_wide_area_engine_new(AvahiServer *s);
 void avahi_wide_area_engine_free(AvahiWideAreaLookupEngine *e);
 
