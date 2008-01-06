@@ -236,6 +236,9 @@ static AvahiEntry * server_add_internal(
     /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
     wide_area_publish(r, "dynamic.endorfine.org", s->wide_area_lookup_engine->next_id++, s->wide_area_lookup_engine->fd_ipv4);
 
+
+        /* printf("next_id: \"%d\"\n",s->wide_area_lookup_engine->next_id ); */
+
     if (flags & AVAHI_PUBLISH_UPDATE) {
         AvahiRecord *old_record;
         int is_first = 1;
