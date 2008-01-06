@@ -810,6 +810,7 @@ void wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
 
     /* TODO: revisit record for wide-area - change ".local" and IPaddr as appropriate */
 
+    printf("---mark--- (2)\n");
     p = avahi_dns_packet_new_update(0); /* TODO: revisit MTU */
     if (!p) { /*OOM check */
       avahi_log_error("avahi_dns_packet_new_update() failed.");
