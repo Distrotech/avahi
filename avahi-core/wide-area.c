@@ -853,7 +853,7 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
 /* TODO: should this be located in this file? */
 /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
-void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id, int fd) {
+void wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
     AvahiDnsPacket *p;
     AvahiKey *k;
 
