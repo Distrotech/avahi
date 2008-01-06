@@ -232,13 +232,15 @@ static AvahiEntry * server_add_internal(
         printf("length: \"%d\"\n", (char)strlen(c_to_canonical_string(r->data.ptr.name)));
         }*/
 
-    /*wide_area_publish();*/
+    /* can generate a temporary random ID via rand() / (RAND_MAX / 65536) */
+    /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
+    wide_area_publish(r, "dynamic.endorfine.org", s->wide_area_lookup_engine->fd_ipv4, s->wide_area_lookup_engine->next_id++);
 
     if (flags & AVAHI_PUBLISH_UPDATE) {
         AvahiRecord *old_record;
         int is_first = 1;
         
-        /* Update and existing record */
+        /* Update an existing record */
 
         /* Find the first matching entry */
         for (e = avahi_hashmap_lookup(s->entries_by_key, r->key); e; e = e->by_key_next) {

@@ -53,13 +53,13 @@ typedef struct AvahiWideAreaCacheEntry AvahiWideAreaCacheEntry;
 
 struct AvahiWideAreaCacheEntry {
     AvahiWideAreaLookupEngine *engine;
-    
+
     AvahiRecord *record;
     struct timeval timestamp;
     struct timeval expiry;
 
     AvahiTimeEvent *time_event;
-    
+
     AVAHI_LLIST_FIELDS(AvahiWideAreaCacheEntry, by_key);
     AVAHI_LLIST_FIELDS(AvahiWideAreaCacheEntry, cache);
 };
@@ -67,12 +67,12 @@ struct AvahiWideAreaCacheEntry {
 struct AvahiWideAreaLookup {
     AvahiWideAreaLookupEngine *engine;
     int dead;
-    
+
     uint32_t id;  /* effectively just an uint16_t, but we need it as an index for a hash table */
     AvahiTimeEvent *time_event;
 
     AvahiKey *key, *cname_key;
-    
+
     int n_send;
     AvahiDnsPacket *packet;
 
@@ -92,7 +92,7 @@ struct AvahiWideAreaLookupEngine {
     AvahiWatch *watch_ipv4, *watch_ipv6;
 
     uint16_t next_id;
-    
+
     /* Cache */
     AVAHI_LLIST_HEAD(AvahiWideAreaCacheEntry, cache);
     AvahiHashmap *cache_by_key;
@@ -113,23 +113,23 @@ struct AvahiWideAreaLookupEngine {
 static AvahiWideAreaLookup* find_lookup(AvahiWideAreaLookupEngine *e, uint16_t id) {
     AvahiWideAreaLookup *l;
     int i = (int) id;
-    
+
     assert(e);
 
     if (!(l = avahi_hashmap_lookup(e->lookups_by_id, &i)))
         return NULL;
-    
+
     assert(l->id == id);
 
     if (l->dead)
         return NULL;
-    
+
     return l;
 }
 
 static int send_to_dns_server(AvahiWideAreaLookup *l, AvahiDnsPacket *p) {
     AvahiAddress *a;
-    
+
     assert(l);
     assert(p);
 
@@ -140,20 +140,20 @@ static int send_to_dns_server(AvahiWideAreaLookup *l, AvahiDnsPacket *p) {
 
     a = &l->engine->dns_servers[l->engine->current_dns_server];
     l->dns_server_used = *a;
-    
+
     if (a->proto == AVAHI_PROTO_INET) {
 
         if (l->engine->fd_ipv4 < 0)
             return -1;
-        
+
         return avahi_send_dns_packet_ipv4(l->engine->fd_ipv4, AVAHI_IF_UNSPEC, p, NULL, &a->data.ipv4, AVAHI_DNS_PORT);
-        
+
     } else {
         assert(a->proto == AVAHI_PROTO_INET6);
 
         if (l->engine->fd_ipv6 < 0)
             return -1;
-        
+
         return avahi_send_dns_packet_ipv6(l->engine->fd_ipv6, AVAHI_IF_UNSPEC, p, NULL, &a->data.ipv6, AVAHI_DNS_PORT);
     }
 }
@@ -169,7 +169,7 @@ static void next_dns_server(AvahiWideAreaLookupEngine *e) {
 
 static void lookup_stop(AvahiWideAreaLookup *l) {
     assert(l);
-    
+
     l->callback = NULL;
 
     if (l->time_event) {
@@ -192,7 +192,7 @@ static void sender_timeout_callback(AvahiTimeEvent *e, void *userdata) {
             /* There is no other DNS server, fail */
             l->n_send = 1000;
     }
-    
+
     if (l->n_send >= 6) {
         avahi_log_warn(__FILE__": Query timed out.");
         avahi_server_set_errno(l->engine->server, AVAHI_ERR_TIMEOUT);
@@ -213,7 +213,7 @@ AvahiWideAreaLookup *avahi_wide_area_lookup_new(
     AvahiKey *key,
     AvahiWideAreaLookupCallback callback,
     void *userdata) {
-    
+
     struct timeval tv;
     AvahiWideAreaLookup *l, *t;
     uint8_t *p;
@@ -239,7 +239,7 @@ AvahiWideAreaLookup *avahi_wide_area_lookup_new(
             break; /* This ID is not yet used. */
 
     l->id = e->next_id++;
-    
+
     /* We keep the packet around in case we need to repeat our query */
     l->packet = avahi_dns_packet_new(0);
 
@@ -248,7 +248,7 @@ AvahiWideAreaLookup *avahi_wide_area_lookup_new(
 
     p = avahi_dns_packet_append_key(l->packet, key, 0);
     assert(p);
-    
+
     avahi_dns_packet_set_field(l->packet, AVAHI_DNS_FIELD_QDCOUNT, 1);
 
     if (send_to_dns_server(l, l->packet) < 0) {
@@ -262,7 +262,7 @@ AvahiWideAreaLookup *avahi_wide_area_lookup_new(
     }
 
     l->n_send = 1;
-    
+
     l->time_event = avahi_time_event_new(e->server->time_event_queue, avahi_elapse_time(&tv, 500, 0), sender_timeout_callback, l);
 
     avahi_hashmap_insert(e->lookups_by_id, &l->id, l);
@@ -272,14 +272,14 @@ AvahiWideAreaLookup *avahi_wide_area_lookup_new(
     avahi_hashmap_replace(e->lookups_by_key, avahi_key_ref(l->key), t);
 
     AVAHI_LLIST_PREPEND(AvahiWideAreaLookup, lookups, e->lookups, l);
-    
+
     return l;
 }
 
 static void lookup_destroy(AvahiWideAreaLookup *l) {
     AvahiWideAreaLookup *t;
     assert(l);
-    
+
     lookup_stop(l);
 
     t = avahi_hashmap_lookup(l->engine->lookups_by_key, l->key);
@@ -299,7 +299,7 @@ static void lookup_destroy(AvahiWideAreaLookup *l) {
 
     if (l->cname_key)
         avahi_key_unref(l->cname_key);
-    
+
     avahi_free(l);
 }
 
@@ -320,7 +320,7 @@ void avahi_wide_area_cleanup(AvahiWideAreaLookupEngine *e) {
 
     while (e->cleanup_dead) {
         e->cleanup_dead = 0;
-    
+
         for (l = e->lookups; l; l = n) {
             n = l->lookups_next;
             
@@ -354,7 +354,7 @@ static void cache_entry_free(AvahiWideAreaCacheEntry *c) {
 
 static void expiry_event(AvahiTimeEvent *te, void *userdata) {
     AvahiWideAreaCacheEntry *e = userdata;
-    
+
     assert(te);
     assert(e);
 
@@ -363,7 +363,7 @@ static void expiry_event(AvahiTimeEvent *te, void *userdata) {
 
 static AvahiWideAreaCacheEntry* find_record_in_cache(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
     AvahiWideAreaCacheEntry *c;
-    
+
     assert(e);
     assert(r);
 
@@ -376,17 +376,17 @@ static AvahiWideAreaCacheEntry* find_record_in_cache(AvahiWideAreaLookupEngine *
 
 static void run_callbacks(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
     AvahiWideAreaLookup *l;
-    
+
     assert(e);
     assert(r);
 
     for (l = avahi_hashmap_lookup(e->lookups_by_key, r->key); l; l = l->by_key_next) {
         if (l->dead || !l->callback)
             continue;
-        
+
         l->callback(e, AVAHI_BROWSER_NEW, AVAHI_LOOKUP_RESULT_WIDE_AREA, r, l->userdata);
     }
-    
+
     if (r->key->clazz == AVAHI_DNS_CLASS_IN && r->key->type == AVAHI_DNS_TYPE_CNAME) {
         /* It's a CNAME record, so we have to scan the all lookups to see if one matches */
 
@@ -409,7 +409,7 @@ static void run_callbacks(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
 static void add_to_cache(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
     AvahiWideAreaCacheEntry *c;
     int is_new;
-    
+
     assert(e);
     assert(r);
 
@@ -427,7 +427,7 @@ static void add_to_cache(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
         if (e->cache_n_entries >= CACHE_ENTRIES_MAX)
             /* Eventually we should improve the caching algorithm here */
             goto finish;
-        
+
         c = avahi_new(AvahiWideAreaCacheEntry, 1);
         c->engine = e;
         c->time_event = NULL;
@@ -443,7 +443,7 @@ static void add_to_cache(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
     }
 
     c->record = avahi_record_ref(r);
-    
+
     gettimeofday(&c->timestamp, NULL);
     c->expiry = c->timestamp;
     avahi_timeval_add(&c->expiry, r->ttl * 1000000);
@@ -454,7 +454,7 @@ static void add_to_cache(AvahiWideAreaLookupEngine *e, AvahiRecord *r) {
         c->time_event = avahi_time_event_new(e->server->time_event_queue, &c->expiry, expiry_event, c);
 
 finish:
-    
+
     if (is_new)
         run_callbacks(e, r);
 }
@@ -489,7 +489,7 @@ static void handle_packet(AvahiWideAreaLookupEngine *e, AvahiDnsPacket *p) {
     int i, r;
 
     AvahiBrowserEvent final_event = AVAHI_BROWSER_ALL_FOR_NOW;
-    
+
     assert(e);
     assert(p);
 
@@ -518,7 +518,7 @@ static void handle_packet(AvahiWideAreaLookupEngine *e, AvahiDnsPacket *p) {
     /* Skip over the question */
     for (i = (int) avahi_dns_packet_get_field(p, AVAHI_DNS_FIELD_QDCOUNT); i > 0; i--) {
         AvahiKey *k;
-        
+
         if (!(k = avahi_dns_packet_consume_key(p, NULL))) {
             avahi_log_warn(__FILE__": Wide area response packet too short or invalid while reading question key. (Maybe an UTF8 problem?)");
             avahi_server_set_errno(e->server, AVAHI_ERR_INVALID_PACKET);
@@ -548,7 +548,7 @@ static void handle_packet(AvahiWideAreaLookupEngine *e, AvahiDnsPacket *p) {
     }
 
 finish:
-    
+
     if (l && !l->dead) {
         if (l->callback)
             l->callback(e, final_event, AVAHI_LOOKUP_RESULT_WIDE_AREA, NULL, l->userdata);
@@ -560,7 +560,7 @@ finish:
 static void socket_event(AVAHI_GCC_UNUSED AvahiWatch *w, int fd, AVAHI_GCC_UNUSED AvahiWatchEvent events, void *userdata) {
     AvahiWideAreaLookupEngine *e = userdata;
     AvahiDnsPacket *p = NULL;
-    
+
     if (fd == e->fd_ipv4)
         p = avahi_recv_dns_packet_ipv4(e->fd_ipv4, NULL, NULL, NULL, NULL, NULL);
     else {
@@ -576,7 +576,7 @@ static void socket_event(AVAHI_GCC_UNUSED AvahiWatch *w, int fd, AVAHI_GCC_UNUSE
 
 AvahiWideAreaLookupEngine *avahi_wide_area_engine_new(AvahiServer *s) {
     AvahiWideAreaLookupEngine *e;
-    
+
     assert(s);
 
     e = avahi_new(AvahiWideAreaLookupEngine, 1);
@@ -595,7 +595,7 @@ AvahiWideAreaLookupEngine *avahi_wide_area_engine_new(AvahiServer *s) {
 
         if (e->fd_ipv4 >= 0)
             close(e->fd_ipv4);
-        
+
         avahi_free(e);
         return NULL;
     }
@@ -603,7 +603,7 @@ AvahiWideAreaLookupEngine *avahi_wide_area_engine_new(AvahiServer *s) {
     /* Create watches */
 
     e->watch_ipv4 = e->watch_ipv6 = NULL;
-    
+
     if (e->fd_ipv4 >= 0)
         e->watch_ipv4 = s->poll_api->watch_new(e->server->poll_api, e->fd_ipv4, AVAHI_WATCH_IN, socket_event, e);
     if (e->fd_ipv6 >= 0)
@@ -627,12 +627,12 @@ AvahiWideAreaLookupEngine *avahi_wide_area_engine_new(AvahiServer *s) {
 
 void avahi_wide_area_engine_free(AvahiWideAreaLookupEngine *e) {
     assert(e);
-    
+
     avahi_wide_area_clear_cache(e);
 
     while (e->lookups)
         lookup_destroy(e->lookups);
-    
+
     avahi_hashmap_free(e->cache_by_key);
     avahi_hashmap_free(e->lookups_by_id);
     avahi_hashmap_free(e->lookups_by_key);
@@ -645,7 +645,7 @@ void avahi_wide_area_engine_free(AvahiWideAreaLookupEngine *e) {
 
     if (e->fd_ipv6 >= 0)
         close(e->fd_ipv6);
-    
+
     if (e->fd_ipv4 >= 0)
         close(e->fd_ipv4);
 
@@ -672,7 +672,7 @@ void avahi_wide_area_set_servers(AvahiWideAreaLookupEngine *e, const AvahiAddres
         assert(n == 0);
         e->n_dns_servers = 0;
     }
-    
+
     e->current_dns_server = 0;
 
     avahi_wide_area_clear_cache(e);
@@ -680,12 +680,12 @@ void avahi_wide_area_set_servers(AvahiWideAreaLookupEngine *e, const AvahiAddres
 
 void avahi_wide_area_cache_dump(AvahiWideAreaLookupEngine *e, AvahiDumpCallback callback, void* userdata) {
     AvahiWideAreaCacheEntry *c;
-    
+
     assert(e);
     assert(callback);
 
     callback(";; WIDE AREA CACHE ;;; ", userdata);
-    
+
     for (c = e->cache; c; c = c->cache_next) {
         char *t = avahi_record_to_string(c->record);
         callback(t, userdata);
@@ -697,7 +697,7 @@ unsigned avahi_wide_area_scan_cache(AvahiWideAreaLookupEngine *e, AvahiKey *key,
     AvahiWideAreaCacheEntry *c;
     AvahiKey *cname_key;
     unsigned n = 0;
-    
+
     assert(e);
     assert(key);
     assert(callback);
@@ -713,7 +713,7 @@ unsigned avahi_wide_area_scan_cache(AvahiWideAreaLookupEngine *e, AvahiKey *key,
             callback(e, AVAHI_BROWSER_NEW, AVAHI_LOOKUP_RESULT_WIDE_AREA|AVAHI_LOOKUP_RESULT_CACHED, c->record, userdata);
             n++;
         }
-        
+
         avahi_key_unref(cname_key);
     }
 
@@ -852,17 +852,22 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 }
 
 /* TODO: should this be located in this file? */
-/* call as wide_area_publish(<record>,"dynamic.endorfine.org",<id>) */
-/* can generate a temporary random ID via rand() / (RAND_MAX / 65536) */
-void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
+/* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
+void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id, int fd) {
     AvahiDnsPacket *p;
     AvahiKey *k;
+
+    AvahiAddress *a;
 
     AvahiRecord *tsig;
 
     /* TODO: in merged version into upstream, key needs to be an external configurable pulled from /etc */
     static const char key[16] = { 0x12, 0xa6, 0x05, 0xcc, 0x38, 0xf9, 0x1f, 0x1e,
                                   0x24, 0x21, 0x6c, 0xa4, 0xd0, 0x1e, 0x88, 0x38 };
+
+    /* TODO: in merged version into upstream, address needs to be an external configurable pulled from /etc */
+    /* testing with farpoint.endorfine.org statically configured */
+    avahi_address_parse("69.56.173.108", AVAHI_PROTO_UNSPEC, a);
 
     /* TODO: revisit record for wide-area - change ".local" and IPaddr as appropriate */
 
@@ -924,6 +929,8 @@ void wide_area_publish(AvahiRecord *r, char *zone, uint16_t id) {
       assert(p);
     }
 
-    /*TODO: put packet on the wire */
+    /* put packet on the wire */
+    /* avahi_send_dns_packet_ipv4(<socket/>, <interface/>, <packet/>, <srcaddr/>, <dstaddr/>, <dstport/>);*/
+    avahi_send_dns_packet_ipv4(fd, AVAHI_IF_UNSPEC, p, NULL, &a->data.ipv4, AVAHI_DNS_PORT);
 
 }
