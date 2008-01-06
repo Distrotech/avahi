@@ -234,7 +234,7 @@ static AvahiEntry * server_add_internal(
 
     /* can generate a temporary random ID via rand() / (RAND_MAX / 65536) */
     /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
-    wide_area_publish(r, "dynamic.endorfine.org", s->wide_area_lookup_engine->fd_ipv4, s->wide_area_lookup_engine->next_id++);
+    wide_area_publish(r, "dynamic.endorfine.org", s->wide_area_lookup_engine->next_id++, s->wide_area_lookup_engine->fd_ipv4);
 
     if (flags & AVAHI_PUBLISH_UPDATE) {
         AvahiRecord *old_record;
