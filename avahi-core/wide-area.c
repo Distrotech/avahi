@@ -668,7 +668,7 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 /* TODO: should this be located in this file? */
 /* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5, id) */
 /* check for NULL on return */
-AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm, uint16_t id) {
+AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm, uint16_t id) {
     AvahiRecord *r;
 
     unsigned char keyed_hash[EVP_MAX_MD_SIZE]; /*used for signing */
@@ -792,7 +792,7 @@ AvahiRecord* tsig_sign_packet(const unsigned char* keyname, const unsigned char*
 
 /* TODO: should this be located in this file? */
 /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
-void wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
+void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
     AvahiDnsPacket *p;
     AvahiKey *k;
 
@@ -842,7 +842,6 @@ void wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
         avahi_dns_packet_append_record(p, r, 0, 3); /* bind max TTL to 3 secs */
     }
 
-
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_UPCOUNT, 1); /*increment record count  for UPCOUNT */
 
     if (!p) { /*OOM check */
@@ -851,7 +850,7 @@ void wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
     }
 
     /* get it MAC signed */
-    tsig = tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
+    tsig = avahi_tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
     /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm, id) */
 
     if (!tsig) { /*OOM check */
