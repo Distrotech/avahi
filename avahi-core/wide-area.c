@@ -694,6 +694,8 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     r->data.tsig.original_id = id; /* MUST match DNS transaction ID, but it is not hashed */
 
+    printf("---mark--- (3)\n");
+
     switch (algorithm){
 
     case AVAHI_TSIG_HMAC_MD5   :
@@ -739,6 +741,7 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
                return NULL;
     }
 
+
     /*generate MAC */
 
     switch (algorithm){
@@ -758,12 +761,20 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
                return NULL;
     }
 
+    printf("size:%d\n", (unsigned int)p->size);
+    if ((unsigned char *)p->data == NULL)
+        printf("---NULL--- (3)\n");
+
     /*feed all the data to be hashed in */
     /*HMAC_Update(&ctx, <data/>, <length/>);*/
     HMAC_Update(&ctx, (unsigned char *)p->data, (unsigned int)p->size); /*packet in wire format*/
 
+    printf("---mark--- (3b)\n");
+
     canonic = c_to_canonical_string(keyname); /* key name in canonical wire format (DNS labels) */
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
+
+    printf("---mark--- (3c)\n");
 
     HMAC_Update(&ctx, uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class - always ANY for TSIG*/
 
@@ -771,6 +782,8 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     canonic = c_to_canonical_string(r->data.tsig.algorithm_name); /* IANA algorithm name in canonical wire format (DNS labels)*/
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
+
+    printf("---mark--- (3d)\n");
 
     HMAC_Update(&ctx, time_t_to_canonical_string(r->data.tsig.time_signed), 6); /*uint48 representation of unix time */
 
@@ -793,10 +806,11 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 /* TODO: should this be located in this file? */
 /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
 void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
+    char result;
     AvahiDnsPacket *p;
     AvahiKey *k;
 
-    AvahiAddress *a;
+    AvahiAddress a;
 
     AvahiRecord *tsig;
 
@@ -805,13 +819,15 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
                                   0x24, 0x21, 0x6c, 0xa4, 0xd0, 0x1e, 0x88, 0x38 };
 
     /* TODO: in merged version into upstream, address needs to be an external configurable pulled from /etc */
+
     /* testing with farpoint.endorfine.org statically configured */
-    avahi_address_parse("69.56.173.108", AVAHI_PROTO_UNSPEC, a);
+
+    avahi_address_parse("69.56.173.108", AVAHI_PROTO_UNSPEC, &a);
 
     /* TODO: revisit record for wide-area - change ".local" and IPaddr as appropriate */
 
-    printf("---mark--- (2)\n");
     p = avahi_dns_packet_new_update(0); /* TODO: revisit MTU */
+
     if (!p) { /*OOM check */
       avahi_log_error("avahi_dns_packet_new_update() failed.");
       assert(p);
@@ -827,31 +843,38 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
       assert(k);
     }
 
-    avahi_dns_packet_append_key(p, k, 0); /* add zone record */
+    result = avahi_dns_packet_append_key(p, k, 0); /* add zone record */
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ZOCOUNT, 1); /*increment record count  for ZOCOUNT */
 
-    if (!p) { /*OOM check */
+    if (!result) {
       avahi_log_error("appending of rdata failed.");
-      assert(p);
+      assert(result);
     }
 
     if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
-        avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
+        result = avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
     } else {
-        avahi_dns_packet_append_record(p, r, 0, 3); /* bind max TTL to 3 secs */
+        result = avahi_dns_packet_append_record(p, r, 0, 3); /* bind max TTL to 3 secs */
     }
 
-    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_UPCOUNT, 1); /*increment record count  for UPCOUNT */
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_UPCOUNT, 1); /*increment record count for UPCOUNT */
 
-    if (!p) { /*OOM check */
+    if (!result) {
       avahi_log_error("appending of rdata failed.");
-      assert(p);
+      assert(result);
     }
+
+    printf("---mark--- (2)\n");
+    printf("(2)result=%d\n", result);
+    if (p->data == NULL)
+        printf("---NULL--- (2)\n");
 
     /* get it MAC signed */
     tsig = avahi_tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
     /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm, id) */
+
+    printf("---mark--- (4)\n");
 
     if (!tsig) { /*OOM check */
       avahi_log_error("tsig record generation failed.");
@@ -870,6 +893,6 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
 
     /* put packet on the wire */
     /* avahi_send_dns_packet_ipv4(<socket/>, <interface/>, <packet/>, <srcaddr/>, <dstaddr/>, <dstport/>);*/
-    avahi_send_dns_packet_ipv4(fd, AVAHI_IF_UNSPEC, p, NULL, &a->data.ipv4, AVAHI_DNS_PORT);
+    avahi_send_dns_packet_ipv4(fd, AVAHI_IF_UNSPEC, p, NULL, &a.data.ipv4, AVAHI_DNS_PORT);
 
 }
