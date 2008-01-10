@@ -763,33 +763,53 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             break;
 
         case AVAHI_DNS_TYPE_TSIG:
+            printf("---mark--- (5)\n");
 
             if (!(avahi_dns_packet_append_name(p, r->data.tsig.algorithm_name)))
                 return -1;
 
-            if (!avahi_dns_packet_append_bytes(p, r->data.tsig.time_signed, 6)) /* 6 bytes. Order may need fixing? */
+            printf("---mark--- (6)\n");
+
+            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.time_signed, 6)) /* 6 bytes. Order may need fixing? */
                     return -1;
+
+            printf("---mark--- (7)\n");
 
             if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.fudge, sizeof(r->data.tsig.fudge)))
                 return -1;
 
+            printf("---mark--- (8)\n");
+
             if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.mac_size, sizeof(r->data.tsig.mac_size)))
                 return -1;
+
+            printf("---mark--- (9)\n");
 
             if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.mac, r->data.tsig.mac_size))
                 return -1;
 
+            printf("---mark--- (10)\n");
+
             if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.original_id, sizeof(r->data.tsig.original_id)))
                 return -1;
+
+            printf("---mark--- (11)\n");
 
             if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.error, sizeof(r->data.tsig.error)))
                 return -1;
 
+            printf("---mark--- (12)\n");
+
             if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.other_len, sizeof(r->data.tsig.other_len)))
                 return -1;
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.other_data, r->data.tsig.other_len))
-                return -1;
+            printf("---mark--- (13)\n");
+
+            if(r->data.tsig.other_len > 0)
+              if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.other_data, r->data.tsig.other_len))
+                 return -1;
+
+            printf("---mark--- (14)\n");
 
             break;
 

@@ -884,6 +884,8 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
     /* append TSIG record - note the RRset it goes into! */
     avahi_dns_packet_append_record(p, tsig, 0, 30); /* NOTE: max TTL irrelevant, record comes with a 0 TTL */
 
+    printf("---mark--- (E)\n");
+
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ADCOUNT, 1); /*increment record count  for ADCOUNT */
 
     if (!p) { /*OOM check */
