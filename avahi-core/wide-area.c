@@ -762,12 +762,12 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
     }
 
     printf("size:%d\n", (unsigned int)p->size);
-    if ((unsigned char *)p->data == NULL)
+    if ((unsigned char *)AVAHI_DNS_PACKET_DATA(p) == NULL)
         printf("---NULL--- (3)\n");
 
     /*feed all the data to be hashed in */
     /*HMAC_Update(&ctx, <data/>, <length/>);*/
-    HMAC_Update(&ctx, (unsigned char *)p->data, (unsigned int)p->size); /*packet in wire format*/
+    HMAC_Update(&ctx, (unsigned char *)AVAHI_DNS_PACKET_DATA(p), (unsigned int)p->size); /*packet in wire format*/
 
     printf("---mark--- (3b)\n");
 
@@ -867,7 +867,7 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
 
     printf("---mark--- (2)\n");
     printf("(2)result=%d\n", result);
-    if (p->data == NULL)
+    if (AVAHI_DNS_PACKET_DATA(p) == NULL)
         printf("---NULL--- (2)\n");
 
     /* get it MAC signed */
