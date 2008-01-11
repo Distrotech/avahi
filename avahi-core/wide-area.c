@@ -836,7 +836,7 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ID, id);
 
     /*SOA RR defining zone to be updated */
-    k = avahi_key_new(zone, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_SOA);
+    k = avahi_key_new(zone, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_SOA);
 
     if (!k) { /*OOM check */
       avahi_log_error("avahi_key_new() failed.");
