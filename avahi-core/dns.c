@@ -781,7 +781,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             printf("---mark--- (7)\n");
 
-            if (!avahi_dns_packet_append_uint16(p, &r->data.tsig.fudge))
+            if (!avahi_dns_packet_append_uint16(p, r->data.tsig.fudge))
                 return -1;
 
             printf("---mark--- (8)\n");
