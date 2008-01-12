@@ -786,7 +786,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             printf("---mark--- (8)\n");
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.mac_size, sizeof(r->data.tsig.mac_size)))
+            if (!avahi_dns_packet_append_uint16(p, r->data.tsig.mac_size))
                 return -1;
 
             printf("---mark--- (9)\n");
@@ -796,17 +796,17 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             printf("---mark--- (10)\n");
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.original_id, sizeof(r->data.tsig.original_id)))
+            if (!avahi_dns_packet_append_uint16(p, r->data.tsig.original_id))
                 return -1;
 
             printf("---mark--- (11)\n");
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.error, sizeof(r->data.tsig.error)))
+            if (!avahi_dns_packet_append_uint16(p, r->data.tsig.error))
                 return -1;
 
             printf("---mark--- (12)\n");
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.other_len, sizeof(r->data.tsig.other_len)))
+            if (!avahi_dns_packet_append_uint16(p, r->data.tsig.other_len))
                 return -1;
 
             printf("---mark--- (13)\n");
