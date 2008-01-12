@@ -776,7 +776,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             printf("---mark--- (6)\n");
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.time_signed, 6)) /* 6 bytes. Order may need fixing? */
+            if (!avahi_dns_packet_append_uint16(p,0)||(!avahi_dns_packet_append_uint32(p, r->data.tsig.time_signed)))
                     return -1;
 
             printf("---mark--- (7)\n");

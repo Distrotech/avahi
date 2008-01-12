@@ -688,6 +688,8 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     r->data.tsig.time_signed = time(NULL);
 
+    printf("TIME:%X:%d\n", r->data.tsig.time_signed, r->data.tsig.time_signed);
+
     r->data.tsig.fudge = 300;
 
     r->data.tsig.error = 0; /* no error, we are always transmitting */

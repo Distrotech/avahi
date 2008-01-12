@@ -115,7 +115,7 @@ typedef struct AvahiRecord {
 
         struct {
             char *algorithm_name;
-            time_t time_signed; /*uint48_t */
+            time_t time_signed; /* wire format is unusual uint48_t */
             uint16_t fudge;
             uint16_t mac_size;
             char *mac;
