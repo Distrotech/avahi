@@ -772,7 +772,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             printf("---mark--- (5)\n");
 
             if (!(avahi_dns_packet_append_name(p, r->data.tsig.algorithm_name)))
-                return -1;*/
+                return -1;
 
             printf("---mark--- (6)\n");
 
