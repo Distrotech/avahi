@@ -771,8 +771,12 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
         case AVAHI_DNS_TYPE_TSIG:
             printf("---mark--- (5)\n");
 
-            if (!(avahi_dns_packet_append_name(p, r->data.tsig.algorithm_name)))
+            /*canonic = avahi_c_to_canonical_string(r->data.tsig.algorithm_name);
+            canonic = avahi_c_to_canonical_string(keyname); */
+            if (!(avahi_dns_packet_append_bytes(p, avahi_c_to_canonical_string(r->data.tsig.algorithm_name), strlen(avahi_c_to_canonical_string(r->data.tsig.algorithm_name)) )))
                 return -1;
+            /*if (!(avahi_dns_packet_append_name(p, r->data.tsig.algorithm_name)))
+                return -1;*/
 
             printf("---mark--- (6)\n");
 
