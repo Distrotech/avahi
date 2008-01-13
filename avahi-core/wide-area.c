@@ -840,15 +840,14 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
 
     avahi_address_parse("69.56.173.108", AVAHI_PROTO_UNSPEC, &a);
 
-    /* TODO: revisit record for wide-area - change ".local" and IPaddr as appropriate */
-
-    p = avahi_dns_packet_new_update(0); /* TODO: revisit MTU */
+    p = avahi_dns_packet_new_update(0); /* MTU */
 
     if (!p) { /*OOM check */
       avahi_log_error("avahi_dns_packet_new_update() failed.");
       assert(p);
     }
 
+    /* give packet its DNS transaction ID */
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ID, id);
 
     /*SOA RR defining zone to be updated */
@@ -867,6 +866,9 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
       avahi_log_error("appending of rdata failed.");
       assert(result);
     }
+
+    /* give record global DNS name under our domain */
+    printf("record name: %s\n", r->key->name);
 
     if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
         result = avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
