@@ -776,6 +776,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             printf("---mark--- (6)\n");
 
+            /* map time to uint48 - needs checking on 64bit archs */
             if (!avahi_dns_packet_append_uint16(p,0)||(!avahi_dns_packet_append_uint32(p, r->data.tsig.time_signed)))
                     return -1;
 

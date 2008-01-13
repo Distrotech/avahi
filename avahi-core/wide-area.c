@@ -773,27 +773,27 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     printf("---mark--- (3b)\n");
 
-    canonic = c_to_canonical_string(keyname); /* key name in canonical wire format (DNS labels) */
+    canonic = avahi_c_to_canonical_string(keyname); /* key name in canonical wire format (DNS labels) */
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
 
     printf("---mark--- (3c)\n");
 
-    HMAC_Update(&ctx, uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class - always ANY for TSIG*/
+    HMAC_Update(&ctx, avahi_uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class - always ANY for TSIG*/
 
-    HMAC_Update(&ctx, uint32_to_canonical_string(0), 4); /* TTL - always 0 for TSIG */
+    HMAC_Update(&ctx, avahi_uint32_to_canonical_string(0), 4); /* TTL - always 0 for TSIG */
 
-    canonic = c_to_canonical_string(r->data.tsig.algorithm_name); /* IANA algorithm name in canonical wire format (DNS labels)*/
+    canonic = avahi_c_to_canonical_string(r->data.tsig.algorithm_name); /* IANA algorithm name in canonical wire format (DNS labels)*/
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
 
     printf("---mark--- (3d)\n");
 
-    HMAC_Update(&ctx, time_t_to_canonical_string(r->data.tsig.time_signed), 6); /*uint48 representation of unix time */
+    HMAC_Update(&ctx, avahi_time_t_to_canonical_string(r->data.tsig.time_signed), 6); /*uint48 representation of unix time */
 
-    HMAC_Update(&ctx, uint16_to_canonical_string(r->data.tsig.fudge), 2);
+    HMAC_Update(&ctx, avahi_uint16_to_canonical_string(r->data.tsig.fudge), 2);
 
-    HMAC_Update(&ctx, uint16_to_canonical_string(r->data.tsig.error), 2);
+    HMAC_Update(&ctx, avahi_uint16_to_canonical_string(r->data.tsig.error), 2);
 
-    HMAC_Update(&ctx, uint16_to_canonical_string(r->data.tsig.other_len), 2);
+    HMAC_Update(&ctx, avahi_uint16_to_canonical_string(r->data.tsig.other_len), 2);
 
     HMAC_Update(&ctx, r->data.tsig.other_data, r->data.tsig.other_len); /* should still work if other_len =0 can be passed to the HMAC */
                                                                         /* but no standard cypher uses this to date */

@@ -189,7 +189,7 @@ int avahi_domain_ends_with(const char *domain, const char *suffix) {
 }
 
 /*todo: revise location of this function in this file vs domain.c (and.h) */
-unsigned char * c_to_canonical_string(const char* input)
+unsigned char * avahi_c_to_canonical_string(const char* input)
     {
         char *label = avahi_malloc(AVAHI_LABEL_MAX);
         char *retval = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
@@ -224,7 +224,7 @@ unsigned char * c_to_canonical_string(const char* input)
        return retval;
     }
 
-unsigned char * uint16_to_canonical_string(uint16_t v) {
+unsigned char * avahi_uint16_to_canonical_string(uint16_t v) {
     uint8_t *c = avahi_malloc(2);
 
     c[0] = (uint8_t) (v >> 8);
@@ -232,7 +232,7 @@ unsigned char * uint16_to_canonical_string(uint16_t v) {
     return c;
 }
 
-unsigned char * uint32_to_canonical_string(uint32_t v) {
+unsigned char * avahi_uint32_to_canonical_string(uint32_t v) {
     uint8_t *c = avahi_malloc(4);
 
     c[0] = (uint8_t) (v >> 24);
@@ -243,11 +243,11 @@ unsigned char * uint32_to_canonical_string(uint32_t v) {
     return c;
 }
 
-unsigned char * time_t_to_canonical_string(time_t v) {
+unsigned char * avahi_time_t_to_canonical_string(time_t v) {
     uint8_t *c = avahi_malloc(6);
 
-    c[0] = (uint8_t) (v >> 40);
-    c[1] = (uint8_t) (v >> 32);
+    c[0] = (uint8_t) 0;
+    c[1] = (uint8_t) 0;
     c[2] = (uint8_t) (v >> 24);
     c[3] = (uint8_t) (v >> 16);
     c[4] = (uint8_t) (v >> 8);

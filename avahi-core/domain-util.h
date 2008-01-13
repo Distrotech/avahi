@@ -43,16 +43,16 @@ int avahi_binary_domain_cmp(const char *a, const char *b);
 int avahi_domain_ends_with(const char *domain, const char *suffix);
 
 /** returns canonical DNS representation of C string representing a domain */
-unsigned char * c_to_canonical_string(const char* input);
+unsigned char * avahi_c_to_canonical_string(const char* input);
 
 /** returns canonical wire representation of uint16 */
-unsigned char * uint16_to_canonical_string(uint16_t v);
+unsigned char * avahi_uint16_to_canonical_string(uint16_t v);
 
 /** returns canonical wire representation of uint32 */
-unsigned char * uint32_to_canonical_string(uint32_t v);
+unsigned char * avahi_uint32_to_canonical_string(uint32_t v);
 
 /** returns canonical wire representation of time_t as an uint48 */
-unsigned char * time_t_to_canonical_string(time_t v);
+unsigned char * avahi_time_t_to_canonical_string(time_t v);
 
 AVAHI_C_DECL_END
 
