@@ -808,11 +808,11 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     printf("original:");
     for(i=0; i<hash_length; i++)
-        printf("%02x", keyed_hash[i]);
+        printf("%02x ", keyed_hash[i]);
 
     printf("\ncopy:");
     for(i=0; i<hash_length; i++)
-        printf("%02x", keyed_hash[i]);
+        printf("%02x ", (unsigned char)r->data.tsig.mac[i]);
 
     printf("\nlength:%d", hash_length);
 
