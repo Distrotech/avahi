@@ -677,6 +677,8 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     char *canonic; /*used in conversions */
 
+    int i; /* delete me! */
+
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
     if (!r) {
@@ -795,20 +797,22 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     HMAC_Update(&ctx, avahi_uint16_to_canonical_string(r->data.tsig.other_len), 2);
 
-    HMAC_Update(&ctx, r->data.tsig.other_data, r->data.tsig.other_len); /* should still work if other_len =0 can be passed to the HMAC */
-                                                                        /* but no standard cypher uses this to date */
+    /* but no standard keyed hash uses this section to date */
+    if (r->data.tsig.other_len > 0)
+       HMAC_Update(&ctx, r->data.tsig.other_data, r->data.tsig.other_len);
+
     HMAC_Final(&ctx, keyed_hash, &hash_length);
     HMAC_cleanup(&ctx);
 
     r->data.tsig.mac = avahi_strndup(keyed_hash, hash_length);
 
     printf("original:");
-    for(int i=0; i<hash_length; i++)
-        printf("%02x", keyed_hash[i];
+    for(i=0; i<hash_length; i++)
+        printf("%02x", keyed_hash[i]);
 
     printf("\ncopy:");
-    for(int i=0; i<hash_length; i++)
-        printf("%02x", keyed_hash[i];
+    for(i=0; i<hash_length; i++)
+        printf("%02x", keyed_hash[i]);
 
     printf("\nlength:%d", hash_length);
 
