@@ -792,7 +792,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             printf("---mark--- (9)\n");
 
-            if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.mac, r->data.tsig.mac_size))
+            if (!avahi_dns_packet_append_bytes(p, r->data.tsig.mac, r->data.tsig.mac_size))
                 return -1;
 
             printf("---mark--- (10)\n");
