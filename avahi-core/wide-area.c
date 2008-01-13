@@ -801,7 +801,16 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
     HMAC_cleanup(&ctx);
 
     r->data.tsig.mac = avahi_strndup(keyed_hash, hash_length);
-    printf("MAC: %s\n", r->data.tsig.mac);
+
+    printf("original:");
+    for(int i=0; i<hash_length; i++)
+        printf("%02x", keyed_hash[i];
+
+    printf("\ncopy:");
+    for(int i=0; i<hash_length; i++)
+        printf("%02x", keyed_hash[i];
+
+    printf("\nlength:%d", hash_length);
 
     return r;
 }
