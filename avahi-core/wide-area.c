@@ -873,7 +873,7 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
         printf("---NULL--- (2)\n");
 
     /* get it MAC signed */
-    tsig = avahi_tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
+    tsig = avahi_tsig_sign_packet("dynamic.endorfine.org.", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
     /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm, id) */
 
     printf("---mark--- (4)\n");
