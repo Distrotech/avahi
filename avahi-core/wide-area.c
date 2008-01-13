@@ -801,6 +801,7 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
     HMAC_cleanup(&ctx);
 
     r->data.tsig.mac = avahi_strndup(keyed_hash, hash_length);
+    printf("MAC: %s\n", r->data.tsig.mac);
 
     return r;
 }
@@ -817,8 +818,8 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
     AvahiRecord *tsig;
 
     /* TODO: in merged version into upstream, key needs to be an external configurable pulled from /etc */
-    static const char key[16] = { 0x12, 0xa6, 0x05, 0xcc, 0x38, 0xf9, 0x1f, 0x1e,
-                                  0x24, 0x21, 0x6c, 0xa4, 0xd0, 0x1e, 0x88, 0x38 };
+    static const char key[16] = { 0x12, 0xA6, 0x05, 0xCC, 0x38, 0xF9, 0x1F, 0x1E,
+                                  0x24, 0x21, 0x6C, 0xA4, 0xD0, 0x1E, 0x88, 0x38 };
 
     /* TODO: in merged version into upstream, address needs to be an external configurable pulled from /etc */
 
