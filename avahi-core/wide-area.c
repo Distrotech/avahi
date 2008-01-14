@@ -821,8 +821,12 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
 /* TODO: should this be located in this file? */
 /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
-void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
+int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
     char result;
+
+    char *backup;
+    char globalname[AVAHI_DOMAIN_NAME_MAX]; /* size accounts for escapes if any */
+
     AvahiDnsPacket *p;
     AvahiKey *k;
 
@@ -868,7 +872,14 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
     }
 
     /* give record global DNS name under our domain */
-    printf("record name: %s\n", r->key->name);
+    printf("record name: %s\n", r->key->name); /*tracing*/
+
+    if(strstr(r->key->name, ".arpa") == (r->key->name + strlen(r->key->name - 5)){
+        printf("arpa?: %s\n", r->key->name); /*tracing*/
+        return(0); /* skip over ".arpa" records */
+    }
+
+    strcpy(globalname, r->key->name);
 
     if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
         result = avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
@@ -915,4 +926,5 @@ void avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int 
     /* avahi_send_dns_packet_ipv4(<socket/>, <interface/>, <packet/>, <srcaddr/>, <dstaddr/>, <dstport/>);*/
     avahi_send_dns_packet_ipv4(fd, AVAHI_IF_UNSPEC, p, NULL, &a.data.ipv4, AVAHI_DNS_PORT);
 
+    return 0;
 }
