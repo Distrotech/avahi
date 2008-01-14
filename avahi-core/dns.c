@@ -307,7 +307,7 @@ int avahi_dns_packet_check_valid(AvahiDnsPacket *p) {
     uint16_t flags;
     assert(p);
 
-    printf("size: %d, limit: %d\n",p->size, AVAHI_DNS_PACKET_HEADER_SIZE);
+    /*printf("size: %d, limit: %d\n",p->size, AVAHI_DNS_PACKET_HEADER_SIZE); */
 
     if (p->size < AVAHI_DNS_PACKET_HEADER_SIZE)
         return -1;
@@ -315,7 +315,7 @@ int avahi_dns_packet_check_valid(AvahiDnsPacket *p) {
     /*checking that OPCODE is zero */
     flags = avahi_dns_packet_get_field(p, AVAHI_DNS_FIELD_FLAGS);
 
-    printf("flags: %d\n", flags);
+    /* printf("flags: %d\n", flags); */
 
     /* disabling check, for it won't allow UPDATE (opcode 5)
     if (flags & AVAHI_DNS_FLAG_OPCODE)
