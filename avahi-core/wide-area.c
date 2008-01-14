@@ -824,8 +824,11 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
     char result;
 
-    char *backup;
     char globalname[AVAHI_DOMAIN_NAME_MAX]; /* size accounts for escapes if any */
+    char globalfield[AVAHI_DOMAIN_NAME_MAX];
+    char *backup = NULL;
+    char *backupfield = NULL;
+    char *tmp;
 
     AvahiDnsPacket *p;
     AvahiKey *k;
@@ -874,12 +877,52 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
     /* give record global DNS name under our domain */
     printf("record name: %s\n", r->key->name); /*tracing*/
 
-    if(strstr(r->key->name, ".arpa") == (r->key->name + strlen(r->key->name - 5)){
-        printf("arpa?: %s\n", r->key->name); /*tracing*/
+    if(r->key->name == (strstr(r->key->name, ".arpa") - strlen(r->key->name) + 5))
         return(0); /* skip over ".arpa" records */
+
+    if(r->key->name == (strstr(r->key->name, ".local") - strlen(r->key->name) + 6)) {
+        strcpy(globalname, r->key->name);
+        tmp = strstr(globalname, ".local");
+        tmp[1] = 0; /* delete extension from copy */
+        strcat(globalname, zone);
+
+        backup = r->key->name; /* back up key, restore it at exit */
+        r->key->name = globalname; /* fix key for wide-pub*/
+
+        if (r->key->type == AVAHI_DNS_TYPE_PTR || r->key->type == AVAHI_DNS_TYPE_CNAME || r->key->type == AVAHI_DNS_TYPE_NS || r->key->type == AVAHI_DNS_TYPE_SRV) {
+
+            /* same transformation on r->data.ptr.name */
+
+            switch (r->key->type) {  /* share same layout in union */
+            case AVAHI_DNS_TYPE_PTR:
+            case AVAHI_DNS_TYPE_CNAME:
+            case AVAHI_DNS_TYPE_NS:
+                                    strcpy(globalfield, r->data.ptr.name);
+                                    tmp = strstr(globalfield, ".local");
+                                    tmp[1] = 0; /* delete extension from copy */
+                                    strcat(globalfield, zone);
+
+                                    backupfield = r->data.ptr.name; /* back up field, restore it at exit */
+                                    r->data.ptr.name = globalfield; /* fix field for wide-pub*/
+                                    break;
+
+            case AVAHI_DNS_TYPE_SRV:
+                                    strcpy(globalfield, r->data.srv.name);
+                                    tmp = strstr(globalfield, ".local");
+                                    tmp[1] = 0; /* delete extension from copy */
+                                    strcat(globalfield, zone);
+
+                                    backupfield = r->data.srv.name; /* back up field, restore it at exit */
+                                    r->data.srv.name = globalfield; /* fix field for wide-pub*/
+                                    break;
+           }
+        }
+
+    } else {
+        avahi_log_error("invalid record, not .local nor .arpa in extension.");
     }
 
-    strcpy(globalname, r->key->name);
+    printf("global name: %s\n", globalname); /*tracing*/
 
     if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
         result = avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
@@ -925,6 +968,15 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
     /* put packet on the wire */
     /* avahi_send_dns_packet_ipv4(<socket/>, <interface/>, <packet/>, <srcaddr/>, <dstaddr/>, <dstport/>);*/
     avahi_send_dns_packet_ipv4(fd, AVAHI_IF_UNSPEC, p, NULL, &a.data.ipv4, AVAHI_DNS_PORT);
+
+    /* cleanup */
+    r->key->name = backup; /* restore original key */
+    if (backupfield)
+      if (r->key->type == AVAHI_DNS_TYPE_SRV) { /* SRV has a different layout than other records in the union */
+       r->data.srv.name = backupfield; /* restore field if altered */
+      } else {
+       r->data.ptr.name = backupfield; /* restore field if altered */
+      }
 
     return 0;
 }
