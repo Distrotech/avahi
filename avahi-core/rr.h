@@ -51,6 +51,13 @@ enum {
     AVAHI_TSIG_HMAC_SHA256 = 0x3
 };
 
+/** wide-area publishing flags */
+
+enum {
+    AVAHI_WIDEAREA_PUBLISH = 0x1,
+    AVAHI_WIDEAREA_DELETE = 0x2
+};
+
 /** DNS record classes, see RFC 1035, in addition to those defined in defs.h */
 enum {
     AVAHI_DNS_CLASS_ANY = 0xFF,         /**< Special query type for requesting all records */

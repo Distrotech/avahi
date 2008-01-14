@@ -820,8 +820,8 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 }
 
 /* TODO: should this be located in this file? */
-/* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>) */
-int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd) {
+/* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>, <publish/delete>) */
+int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int fd, unsigned action) {
     char result;
 
     char globalname[AVAHI_DOMAIN_NAME_MAX]; /* size accounts for escapes if any */
@@ -875,7 +875,6 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
     }
 
     /* give record global DNS name under our domain */
-    printf("record name: %s\n", r->key->name); /*tracing*/
 
     if(r->key->name == (strstr(r->key->name, ".arpa") - strlen(r->key->name) + 5))
         return(0); /* skip over ".arpa" records */
@@ -891,7 +890,7 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
 
         if (r->key->type == AVAHI_DNS_TYPE_PTR || r->key->type == AVAHI_DNS_TYPE_CNAME || r->key->type == AVAHI_DNS_TYPE_NS || r->key->type == AVAHI_DNS_TYPE_SRV) {
 
-            /* same transformation on r->data.ptr.name */
+            /* same transformation on r->data.ptr.name and r->data.srv.name */
 
             switch (r->key->type) {  /* share same layout in union */
             case AVAHI_DNS_TYPE_PTR:
@@ -922,12 +921,14 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
         avahi_log_error("invalid record, not .local nor .arpa in extension.");
     }
 
-    printf("global name: %s\n", globalname); /*tracing*/
-
-    if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
-        result = avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
-    } else {
-        result = avahi_dns_packet_append_record(p, r, 0, 3); /* bind max TTL to 3 secs */
+    if(action == AVAHI_WIDEAREA_DELETE) { /* deleting pre-existing record */
+        result = avahi_dns_packet_append_record(p, r, 0, 0); /* bind max TTL to 0, deletion */
+    } else { /* publishing new record */
+            if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
+                result = avahi_dns_packet_append_record(p, r, 0, 1); /* bind max TTL to 1 sec */
+            } else {
+                result = avahi_dns_packet_append_record(p, r, 0, 3); /* bind max TTL to 3 secs */
+            }
     }
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_UPCOUNT, 1); /*increment record count for UPCOUNT */

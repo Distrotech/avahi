@@ -521,6 +521,7 @@ void avahi_goodbye_entry(AvahiServer *s, AvahiEntry *e, int send_goodbye, int re
 
             /* tracing message for wide-area pub development */
             printf("--- record of type %d named %s observed at exitpoint\n", e->record->key->type, e->record->key->name);
+            avahi_wide_area_publish(r, "dynamic.endorfine.org", s->wide_area_lookup_engine->next_id++, s->wide_area_lookup_engine->fd_ipv4, AVAHI_WIDEAREA_DELETE);
         }
 
     if (remove)
