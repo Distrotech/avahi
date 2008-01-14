@@ -677,7 +677,7 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     char *canonic; /*used in conversions */
 
-    int i; /* delete me! */
+    int i; /* used in debug runs */
 
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_ANY, AVAHI_DNS_TYPE_TSIG, 0);
 
@@ -690,15 +690,13 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     r->data.tsig.time_signed = time(NULL);
 
-    printf("TIME:%X:%d\n", r->data.tsig.time_signed, r->data.tsig.time_signed);
+    /* printf("TIME:%X:%d\n", r->data.tsig.time_signed, r->data.tsig.time_signed); */
 
     r->data.tsig.fudge = 300;
 
     r->data.tsig.error = 0; /* no error, we are always transmitting */
 
     r->data.tsig.original_id = id; /* MUST match DNS transaction ID, but it is not hashed */
-
-    printf("---mark--- (3)\n");
 
     switch (algorithm){
 
@@ -765,20 +763,14 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
                return NULL;
     }
 
-    printf("size:%d\n", (unsigned int)p->size);
-    if ((unsigned char *)AVAHI_DNS_PACKET_DATA(p) == NULL)
-        printf("---NULL--- (3)\n");
+    /* printf("size:%d\n", (unsigned int)p->size); */
 
     /*feed all the data to be hashed in */
     /*HMAC_Update(&ctx, <data/>, <length/>);*/
     HMAC_Update(&ctx, (unsigned char *)AVAHI_DNS_PACKET_DATA(p), (unsigned int)p->size); /*packet in wire format*/
 
-    printf("---mark--- (3b)\n");
-
     canonic = avahi_c_to_canonical_string(keyname); /* key name in canonical wire format (DNS labels) */
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
-
-    printf("---mark--- (3c)\n");
 
     HMAC_Update(&ctx, avahi_uint16_to_canonical_string(AVAHI_DNS_CLASS_ANY), 2); /* class - always ANY for TSIG*/
 
@@ -786,8 +778,6 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     canonic = avahi_c_to_canonical_string(r->data.tsig.algorithm_name); /* IANA algorithm name in canonical wire format (DNS labels)*/
     HMAC_Update(&ctx, canonic, strlen(canonic) +1);
-
-    printf("---mark--- (3d)\n");
 
     HMAC_Update(&ctx, avahi_time_t_to_canonical_string(r->data.tsig.time_signed), 6); /*uint48 representation of unix time */
 
@@ -806,15 +796,11 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
 
     r->data.tsig.mac = avahi_strndup(keyed_hash, hash_length);
 
-    printf("original:");
+    /* printf("computed MAC:");
     for(i=0; i<hash_length; i++)
         printf("%02x ", keyed_hash[i]);
 
-    printf("\ncopy:");
-    for(i=0; i<hash_length; i++)
-        printf("%02x ", (unsigned char)r->data.tsig.mac[i]);
-
-    printf("\nlength:%d", hash_length);
+    printf("\nlength:%d", hash_length); */
 
     return r;
 }
@@ -946,16 +932,9 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
       assert(result);
     }
 
-    printf("---mark--- (2)\n");
-    printf("(2)result=%d\n", result);
-    if (AVAHI_DNS_PACKET_DATA(p) == NULL)
-        printf("---NULL--- (2)\n");
-
     /* get it MAC signed */
     tsig = avahi_tsig_sign_packet("dynamic.endorfine.org", key, sizeof(key), p, AVAHI_TSIG_HMAC_MD5, id);
     /* r = tsig_sign_packet(keyname, key, keylength, packet, hmac_algorithm, id) */
-
-    printf("---mark--- (4)\n");
 
     if (!tsig) { /*OOM check */
       avahi_log_error("tsig record generation failed.");
@@ -964,8 +943,6 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
 
     /* append TSIG record - note the RRset it goes into! */
     avahi_dns_packet_append_record(p, tsig, 0, 30); /* NOTE: max TTL irrelevant, record comes with a 0 TTL */
-
-    printf("---mark--- (E)\n");
 
     avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ADCOUNT, 1); /*increment record count  for ADCOUNT */
 

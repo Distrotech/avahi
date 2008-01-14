@@ -234,11 +234,7 @@ static AvahiEntry * server_add_internal(
 
     /* can generate a temporary random ID via rand() / (RAND_MAX / 65536) */
     /* call as wide_area_publish(<record/>,"dynamic.endorfine.org",<id/>, <socket/>, <publish/delete flag/>) */
-    printf("---mark--- (1)\n");
-    if (s->wide_area_lookup_engine != NULL)
-       printf("---!NULL--- (1)\n");
-    printf("id: \"%x\", \"%d\"\n", s->wide_area_lookup_engine->next_id, s->wide_area_lookup_engine->fd_ipv4);
-    printf("---mark--- (1e)\n");
+    /* printf("id: \"%x\", \"%d\"\n", s->wide_area_lookup_engine->next_id, s->wide_area_lookup_engine->fd_ipv4); */
 
     /* TODO: in merged version into upstream, zone needs to be an external configurable pulled from /etc */
     avahi_wide_area_publish(r, "dynamic.endorfine.org", s->wide_area_lookup_engine->next_id++, s->wide_area_lookup_engine->fd_ipv4, AVAHI_WIDEAREA_PUBLISH);
