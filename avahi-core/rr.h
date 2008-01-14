@@ -61,6 +61,7 @@ enum {
 /** DNS record classes, see RFC 1035, in addition to those defined in defs.h */
 enum {
     AVAHI_DNS_CLASS_ANY = 0xFF,         /**< Special query type for requesting all records */
+    AVAHI_DNS_CLASS_NONE = 0xFE,         /**< Special query type for deleting a record */
     AVAHI_DNS_CACHE_FLUSH = 0x8000,     /**< Not really a class but a bit which may be set in response packets, see mDNS spec for more information */
     AVAHI_DNS_UNICAST_RESPONSE = 0x8000 /**< Not really a class but a bit which may be set in query packets, see mDNS spec for more information */
 };

@@ -828,6 +828,8 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
     char globalfield[AVAHI_DOMAIN_NAME_MAX];
     char *backup = NULL;
     char *backupfield = NULL;
+    uint16_t backupclass;
+    uint32_t backupttl;
     char *tmp;
 
     AvahiDnsPacket *p;
@@ -922,6 +924,12 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
     }
 
     if(action == AVAHI_WIDEAREA_DELETE) { /* deleting pre-existing record */
+        backupclass = r->key->clazz;
+        r->key->clazz = AVAHI_DNS_CLASS_NONE;
+
+        backupttl = r->ttl; /* TODO: fix library limit, support 0 TTL */
+        r->ttl = 0;
+
         result = avahi_dns_packet_append_record(p, r, 0, 0); /* bind max TTL to 0, deletion */
     } else { /* publishing new record */
             if(r->key->type == AVAHI_DNS_TYPE_A) { /* standardize TTLs independent of record for wide-area */
@@ -972,12 +980,18 @@ int avahi_wide_area_publish(AvahiRecord *r, const char *zone, uint16_t id, int f
 
     /* cleanup */
     r->key->name = backup; /* restore original key */
+
     if (backupfield)
       if (r->key->type == AVAHI_DNS_TYPE_SRV) { /* SRV has a different layout than other records in the union */
        r->data.srv.name = backupfield; /* restore field if altered */
       } else {
        r->data.ptr.name = backupfield; /* restore field if altered */
       }
+
+    if(action == AVAHI_WIDEAREA_DELETE) { /* restore class if altered */
+        r->key->clazz = backupclass;
+        r->ttl = backupttl;
+    }
 
     return 0;
 }
