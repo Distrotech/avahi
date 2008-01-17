@@ -43,6 +43,18 @@ enum {
     AVAHI_DNS_TYPE_AXFR = 252
 };
 
+/** DNSSEC signature algorithms, defined in RFCs 4034, 4035, and 4036 */
+
+enum {
+    AVAHI_DNSSEC_KEY_SHA1 = 0x5
+};
+
+/**DNSSEC protocol constants */
+
+enum {
+    AVAHI_DNSSEC_PROTO = 0x3
+};
+
 /** DNS record classes, see RFC 1035, in addition to those defined in defs.h */
 enum {
     AVAHI_DNS_CLASS_ANY = 0xFF,         /**< Special query type for requesting all records */
