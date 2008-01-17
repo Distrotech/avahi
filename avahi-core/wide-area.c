@@ -666,7 +666,7 @@ int avahi_wide_area_has_servers(AvahiWideAreaLookupEngine *e) {
 }
 
 /* TODO: should this be located in this file? */
-/* r = tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5, id) */
+/* r = avahi_tsig_sign_packet("dynamic.endorfine.org", key, 16, p, AVAHI_TSIG_HMAC_MD5, id) */
 /* check for NULL on return */
 AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned char* key, unsigned keylength, AvahiDnsPacket *p, unsigned algorithm, uint16_t id) {
     AvahiRecord *r;
