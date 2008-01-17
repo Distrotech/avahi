@@ -860,7 +860,7 @@ size_t avahi_rdata_serialize(AvahiRecord *record, void *rdata, size_t max_size) 
 }
 
 /* TODO: should this be located in this file? */
-/* r = avahi_get_local_zsk_pubkey("dynamic.endorfine.org", <ttl>) */
+/* r = avahi_get_local_zsk_pubkey("riker.local", <ttl>) */
 AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t ttl){
 
     AvahiRecord *r;
