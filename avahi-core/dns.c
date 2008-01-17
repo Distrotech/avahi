@@ -860,8 +860,8 @@ size_t avahi_rdata_serialize(AvahiRecord *record, void *rdata, size_t max_size) 
 }
 
 /* TODO: should this be located in this file? */
-/* r = avahi_get_local_zsk_pubkey(<ttl>) */
-AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl){
+/* r = avahi_get_local_zsk_pubkey("dynamic.endorfine.org", <ttl>) */
+AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t ttl){
 
     AvahiRecord *r;
 
@@ -874,18 +874,19 @@ AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl){
 
     r->ttl = ttl;   /* TTL of records associated with a signature MUST match the record's */
 
-    r->flags = AVAHI_DNSSEC_DNSKEY_ZK_FLAG; /* bit 7 MUST be set to indicate DNSSEC key */
+    r->data.dnskey.flags = AVAHI_DNSSEC_DNSKEY_ZK_FLAG; /* bit 7 MUST be set to indicate DNSSEC key */
 
-    r->protocol = AVAHI_DNSSEC_PROTO; /* used for "compatibility" with KEY record */
+    r->data.dnskey.protocol = AVAHI_DNSSEC_PROTO; /* used for "compatibility" with KEY record */
 
     /* TODO: in merged version into upstream, key needs to be an external configurable pulled from /etc */
     /* in the prototype, we just statically configure */
 
-    r->algorithm = AVAHI_DNSSEC_KEY_SHA1; /* SHA1 is mandatory in the spec, but others do exist */
+    r->data.dnskey.algorithm = AVAHI_DNSSEC_KEY_SHA1; /* SHA1 is mandatory in the spec, but others do exist */
 
     /* statically using key 62051 which has 512b length */
     /* 512b ZSK pubkey in base64 encoding */
-    r->public_key = avahi_strndup("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF", strlen("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF"));
+    r->data.dnskey.public_key = avahi_strndup("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF", strlen("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF"));
+    /* TODO: explain unexpected gratuitous whitspace in dnssec-keygen output? */
 
     return r;
 }

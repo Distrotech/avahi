@@ -117,6 +117,13 @@ typedef struct AvahiRecord {
             AvahiIPv6Address address;
         } aaaa; /**< Data for AAAA records */
 
+        struct {
+            uint16_t flags;
+            uint8_t protocol;
+            uint8_t algorithm;
+            char *public_key;
+        } dnskey; /**data for DNSKEY records */
+
     } data; /**< Record data */
     
 } AvahiRecord;
