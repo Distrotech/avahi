@@ -79,6 +79,8 @@ int avahi_dns_packet_skip(AvahiDnsPacket *p, size_t length);
 int avahi_dns_packet_is_empty(AvahiDnsPacket *p);
 size_t avahi_dns_packet_space(AvahiDnsPacket *p);
 
+AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl);
+
 #define AVAHI_DNS_FIELD_ID 0
 #define AVAHI_DNS_FIELD_FLAGS 1
 #define AVAHI_DNS_FIELD_QDCOUNT 2
@@ -91,6 +93,9 @@ size_t avahi_dns_packet_space(AvahiDnsPacket *p);
 #define AVAHI_DNS_FLAG_RCODE (15)
 #define AVAHI_DNS_FLAG_TC (1 << 9)
 #define AVAHI_DNS_FLAG_AA (1 << 10)
+
+#define AVAHI_DNSSEC_DNSKEY_ZK_FLAG = (1 << 7)
+#define AVAHI_DNSSEC_DNSKEY_SEP_FLAG = (1 << 15)
 
 #define AVAHI_DNS_FLAGS(qr, opcode, aa, tc, rd, ra, z, ad, cd, rcode) \
         (((uint16_t) !!qr << 15) |  \
