@@ -289,6 +289,8 @@ enum {
     AVAHI_DNS_TYPE_TXT = 0x10,
     AVAHI_DNS_TYPE_AAAA = 0x1C,
     AVAHI_DNS_TYPE_SRV = 0x21,
+    AVAHI_DNS_TYPE_RRSIG = 0x2E,
+    AVAHI_DNS_TYPE_DNSKEY = 0x30
 };
 
 /** DNS record classes, see RFC 1035 */
