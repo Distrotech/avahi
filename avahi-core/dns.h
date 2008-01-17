@@ -94,8 +94,8 @@ AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t t
 #define AVAHI_DNS_FLAG_TC (1 << 9)
 #define AVAHI_DNS_FLAG_AA (1 << 10)
 
-#define AVAHI_DNSSEC_DNSKEY_ZK_FLAG = (1 << 7)
-#define AVAHI_DNSSEC_DNSKEY_SEP_FLAG = (1 << 15)
+#define AVAHI_DNSSEC_DNSKEY_ZK_FLAG (1 << 7)
+#define AVAHI_DNSSEC_DNSKEY_SEP_FLAG (1 << 15)
 
 #define AVAHI_DNS_FLAGS(qr, opcode, aa, tc, rd, ra, z, ad, cd, rcode) \
         (((uint16_t) !!qr << 15) |  \
