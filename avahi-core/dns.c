@@ -746,12 +746,27 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             break;
 
         case AVAHI_DNS_TYPE_AAAA:
-            
+
             if (!avahi_dns_packet_append_bytes(p, &r->data.aaaa.address, sizeof(r->data.aaaa.address)))
                 return -1;
-            
+
             break;
 
+        case AVAHI_DNS_TYPE_DNSKEY:
+
+            if (!avahi_dns_packet_append_uint16(p, r->data.dnskey.flags))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint8(p, r->data.dnskey.protocol))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint16(p, r->data.dnskey.algorithm))
+                return -1;
+
+            if (!avahi_dns_packet_append_bytes(p, r->data.dnskey.public_key, strlen(r->data.tsig.dnskey.public_key)))
+                return -1; /*truncates the null-termination */
+
+            break;
 
         default:
 
