@@ -773,10 +773,10 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             if (!avahi_dns_packet_append_uint16(p, r->data.rrsig.type_covered))
                 return -1;
 
-            if (!avahi_dns_packet_append_uint8(p, r->data.rrsig.algorithm))
+            if (!avahi_dns_packet_append_bytes(p, &r->data.rrsig.algorithm, 1))
                 return -1;
 
-            if (!avahi_dns_packet_append_uint8(p, r->data.rrsig.labels))
+            if (!avahi_dns_packet_append_bytes(p, &r->data.rrsig.labels, 1))
                 return -1;
 
             if (!avahi_dns_packet_append_uint32(p, r->data.rrsig.original_ttl))
