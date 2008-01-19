@@ -757,7 +757,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             if (!avahi_dns_packet_append_uint16(p, r->data.dnskey.flags))
                 return -1;
 
-            if (!avahi_dns_packet_append_uint8(p, r->data.dnskey.protocol))
+            if (!avahi_dns_packet_append_bytes(p, &r->data.dnskey.protocol, 1))
                 return -1;
 
             if (!avahi_dns_packet_append_uint16(p, r->data.dnskey.algorithm))
