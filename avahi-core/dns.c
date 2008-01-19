@@ -763,7 +763,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             if (!avahi_dns_packet_append_uint16(p, r->data.dnskey.algorithm))
                 return -1;
 
-            if (!avahi_dns_packet_append_bytes(p, r->data.dnskey.public_key, strlen(r->data.tsig.dnskey.public_key)))
+            if (!avahi_dns_packet_append_bytes(p, r->data.dnskey.public_key, strlen(r->data.dnskey.public_key)))
                 return -1; /*truncates the null-termination */
 
             break;
@@ -794,7 +794,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
             if (!(avahi_dns_packet_append_name(p, r->data.rrsig.signers_name)))
                 return -1;
 
-            if (!avahi_dns_packet_append_bytes(p, r->data.rrsig.signature, strlen(r->data.tsig.rrsig.signature)))
+            if (!avahi_dns_packet_append_bytes(p, r->data.rrsig.signature, strlen(r->data.rrsig.signature)))
                 return -1; /*truncates the null-termination */
 
             break;
