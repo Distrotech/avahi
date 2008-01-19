@@ -796,7 +796,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
                 return -1;
 
             if(r->data.tsig.other_len > 0)
-              if (!avahi_dns_packet_append_bytes(p, &r->data.tsig.other_data, r->data.tsig.other_len))
+              if (!avahi_dns_packet_append_bytes(p, r->data.tsig.other_data, r->data.tsig.other_len))
                  return -1;
 
             break;
