@@ -124,6 +124,18 @@ typedef struct AvahiRecord {
             char *public_key;
         } dnskey; /**data for DNSKEY records */
 
+        struct {
+            uint16_t type_covered;
+            uint8_t algorithm;
+            uint8_t labels;
+            uint32_t original_ttl;
+            uint32_t signature_expiration;
+            uint32_t signature_inception;
+            uint16_t key_tag;
+            char* signers_name;
+            char* signature;
+        } rrsig; /** data for rrsig record */
+
     } data; /**< Record data */
     
 } AvahiRecord;
