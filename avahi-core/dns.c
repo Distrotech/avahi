@@ -768,6 +768,37 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             break;
 
+            case AVAHI_DNS_TYPE_RRSIG:
+
+            if (!avahi_dns_packet_append_uint16(p, r->data.rrsig.type_covered))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint8(p, r->data.rrsig.algorithm))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint8(p, r->data.rrsig.labels))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint32(p, r->data.rrsig.original_ttl))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint32(p, r->data.rrsig.signature_expiration))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint32(p, r->data.rrsig.signature_inception))
+                return -1;
+
+            if (!avahi_dns_packet_append_uint16(p, r->data.rrsig.key_tag))
+                return -1;
+
+            if (!(avahi_dns_packet_append_name(p, r->data.rrsig.signers_name)))
+                return -1;
+
+            if (!avahi_dns_packet_append_bytes(p, r->data.rrsig.signature, strlen(r->data.tsig.rrsig.signature)))
+                return -1; /*truncates the null-termination */
+
+            break;
+
         default:
 
             if (r->data.generic.size)
