@@ -240,8 +240,8 @@ uint8_t avahi_count_canonical_labels(const char* input){
 }
 
 /* reference keytag generator from RFC 4034 */
-/* invoke with avahi_keytag(<rdata>, <rdlength>); */
-uint16_t avahi_keytag(uint8_t key[], uint16_t keysize){
+/* invoke with keytag(<rdata>, <rdlength>); */
+uint16_t keytag(uint8_t key[], uint16_t keysize){
     uint32_t ac;
     int i;
 
@@ -252,3 +252,38 @@ uint16_t avahi_keytag(uint8_t key[], uint16_t keysize){
 
     return ac & 0xFFFF;
    }
+
+/*invoke with avahi_keytag(<RR>); */
+uint16_t avahi_keytag(AvahiRecord r){
+    uint16_t result;
+    AvahiDNSPacket *tmp;
+
+    if (r->key.type != AVAHI_DNS_TYPE_RRSIG)
+        return NULL; /* invalid RRTYPE to generate keytag on */
+
+    p = avahi_dns_packet_new_query(0); /* MTU */
+
+    if (!p) { /*OOM check */
+      avahi_log_error("avahi_dns_packet_new_update() failed.");
+      assert(p);
+    }
+
+    /* no TTL binding, leave record unaltered */
+    result = avahi_dns_packet_append_record(tmp, key, 0, 0);
+
+    if (!result) {
+      avahi_log_error("appending of rdata failed.");
+      assert(result);
+    }
+
+    /* update RRSET we modified */
+    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ARCOUNT, 1);
+
+    /* finally, generate keytag */
+    /* first arg is rdata address, second arg is rdlength */
+    result = keytag(AVAHI_DNS_PACKET_DATA(tmp), sizeof(uint16_t) + 2*sizeof(uint8_t) + AVAHI_DNSSEC_SHA1_KEYLENGTH);
+
+    avahi_free(tmp);
+
+    return result;
+}

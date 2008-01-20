@@ -48,8 +48,11 @@ unsigned char * avahi_c_to_canonical_string(const char* input);
 /** returns the number of labels in a canonical DNS domain */
 uint8_t avahi_count_canonical_labels(const char* input);
 
+/** returns keytag of a given DNSKEY record */
+uint16_t avahi_keytag(AvahiRecord r);
+
 /* reference keytag generator from RFC 4034 */
-uint16_t avahi_keytag(uint8_t key[], uint16_t keysize)
+uint16_t avahi_keytag(uint8_t key[], uint16_t keysize);
 
 AVAHI_C_DECL_END
 

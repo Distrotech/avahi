@@ -54,7 +54,8 @@ enum {
 enum {
     AVAHI_DNSSEC_PROTO = 0x3,
     AVAHI_DNSSEC_VALIDITY = 30,
-    AVAHI_DNSSEC_TIME_DRIFT = 3600
+    AVAHI_DNSSEC_TIME_DRIFT = 3600,
+    AVAHI_DNSSEC_SHA1_KEYLENGTH = 89
 };
 
 /** DNS record classes, see RFC 1035, in addition to those defined in defs.h */
@@ -134,7 +135,7 @@ typedef struct AvahiRecord {
             uint32_t signature_expiration;
             uint32_t signature_inception;
             uint16_t key_tag;
-            char* signers_name;
+            char* signers_name; /*uncompressed label */
             char* signature;
         } rrsig; /** data for rrsig record */
 
