@@ -42,6 +42,12 @@ int avahi_binary_domain_cmp(const char *a, const char *b);
 /** Returns 1 if the the end labels of domain are eqal to suffix */
 int avahi_domain_ends_with(const char *domain, const char *suffix);
 
+/** returns canonical DNS representation of C string representing a domain */
+unsigned char * avahi_c_to_canonical_string(const char* input);
+
+/** returns the number of labels in a canonical DNS domain */
+uint8_t avahi_count_canonical_labels(const char* input);
+
 AVAHI_C_DECL_END
 
 #endif

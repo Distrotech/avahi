@@ -188,3 +188,53 @@ int avahi_domain_ends_with(const char *domain, const char *suffix) {
     } 
 }
 
+/*todo: revise location of this function in this file vs domain.c (and.h) */
+unsigned char * avahi_c_to_canonical_string(const char* input)
+    {
+        char *label = avahi_malloc(AVAHI_LABEL_MAX);
+        char *retval = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
+        char *result = retval;
+
+        /* printf("invoked with: -%s-\n", input); */
+
+        for(;;)
+            {
+             avahi_unescape_label(&input, label, AVAHI_LABEL_MAX);
+
+             if(!(*label))
+                break;
+
+             *result = (char)strlen(label);
+             /* printf("label length: -%d-\n", *result); */
+
+             result++;
+
+             /*printf("label: -%s-\n", label); */
+
+             strcpy(result, label);
+             result += (char)strlen(label);
+
+             /* printf("intermediate result: -%s-\n", retval); */
+            }
+
+       /* printf("result: -%s-\n", retval);
+          printf("result length: -%d-\n", (char)strlen(retval)); */
+
+       avahi_free(label);
+       return retval;
+    }
+
+uint8_t avahi_count_canonical_labels(const char* input){
+    char *p;
+    uint8_t count;
+
+    p = input;
+    count = 0;
+
+    while (*p != 0){
+          count++;
+          p += *p;
+    }
+
+    return count;
+}
