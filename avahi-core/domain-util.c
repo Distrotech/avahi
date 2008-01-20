@@ -238,3 +238,17 @@ uint8_t avahi_count_canonical_labels(const char* input){
 
     return count;
 }
+
+/* reference keytag generator from RFC 4034 */
+/* invoke with avahi_keytag(<rdata>, <rdlength>); */
+uint16_t avahi_keytag(uint8_t key[], uint16_t keysize){
+    uint32_t ac;
+    int i;
+
+    for (ac = 0, i = 0; i < keysize; ++i)
+        ac += (i & 1) ? key[i] : key[i] << 8;
+
+    ac += (ac >> 16) & 0xFFFF;
+
+    return ac & 0xFFFF;
+   }
