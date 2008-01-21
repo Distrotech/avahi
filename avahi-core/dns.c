@@ -35,6 +35,8 @@
 #include <avahi-common/domain.h>
 #include <avahi-common/malloc.h>
 
+#include <openssl/evp.h>
+
 #include "dns.h"
 #include "log.h"
 
@@ -940,21 +942,24 @@ AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl){
 }
 
 /* invoke as avahi_dnssec_sign_record(<record>, <ttl>) */
-AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
+AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     AvahiRecord *r;
 
     AvahiRecord *key;
     int result;
 
     char *canonic; /*used in conversions */
-    AvahiDNSPacket *tmp;
+    AvahiDnsPacket *tmp;
 
     unsigned char signature[EVP_MAX_MD_SIZE]; /*used for signing */
-    HMAC_CTX ctx;
+    EVP_MD_CTX ctx;
     unsigned signature_length;
 
 
-    r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_RRSIG, 0);
+    /* retrieve RRSIG record representing localhost's trust */
+    key = avahi_get_local_zsk_pubkey(ttl);
+
+    r = avahi_record_new_full(key->key->name, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_RRSIG, 0);
 
     if (!r) { /* OOM check */
        avahi_log_error("avahi_record_new_full() failed.");
@@ -962,16 +967,16 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     }
 
     /* type of covered record */
-    r->data.rrsig.type_covered = s->key.type;
+    r->data.rrsig.type_covered = s->key->type;
 
     /* SHA1 is mandatory in the spec (MUST), but other options are available */
     r->data.rrsig.algorithm = AVAHI_DNSSEC_KEY_SHA1;
 
     /* label count */
-    r->data.rrsig.labels = avahi_count_canonical_labels(avahi_c_to_canonical_string(s->key.name));
+    r->data.rrsig.labels = avahi_count_canonical_labels(avahi_c_to_canonical_string(s->key->name));
 
     /* original ttl */
-    r->data.rrsig.ttl = ttl); /*this could  be invalidated if TTL capping is later used in the packet dispatching call */
+    r->ttl = ttl; /*this could  be invalidated if TTL capping is later used in the packet dispatching call */
 
     /* signature validity - ttl seconds from now is reasonable*/
     r->data.rrsig.signature_expiration = time(NULL) + ttl;
@@ -979,11 +984,8 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     /* when was the record signed? to allow for badly sync'd clocks, one conventionally claims signing 1 hour in the past */
     r->data.rrsig.signature_inception = time(NULL) - AVAHI_DNSSEC_TIME_DRIFT;
 
-    /* retrieve RRSIG record representing localhost's trust */
-    key = avahi_get_local_zsk_pubkey(ttl);
-
     /* generate keytag of the localhost's pubkey */
-    r->data.rrsig.keytag = avahi_keytag(key);
+    r->data.rrsig.key_tag = avahi_keytag(key);
 
     /* <localhost>+".local", to be retrieved from future *private* crypto config file along with local ZSK keypair */
     r->data.rrsig.signers_name = avahi_strdup (key->key->name);
@@ -994,7 +996,7 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
 
     switch (r->data.dnskey.algorithm){
 
-    case AVAHI_DNSSEC_KEY_SHA1   :   EVP_SigInit(&ctx, EVP_sha1());
+    case AVAHI_DNSSEC_KEY_SHA1   : EVP_SignInit(&ctx, EVP_sha1());
                                    break;  /* RSA SHA1 is only mandatory in the spec, others exist */
 
     default:   avahi_log_error("Unknown algorithm requested from avahi_dnssec_sign_record()");
@@ -1027,7 +1029,7 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     EVP_SignUpdate(&ctx, avahi_uint16_to_canonical_string(r->data.rrsig.key_tag), 2);
 
     /* authority */
-    canonic = avahi_c_to_canonical_string(r->data->signers_name); /* signer's name in canonical wire format (DNS labels) */
+    canonic = avahi_c_to_canonical_string(r->data.rrsig.signers_name); /* signer's name in canonical wire format (DNS labels) */
     EVP_SignUpdate(&ctx, canonic, strlen(canonic) +1);
 
     /* now the DNS record that we are signing, complete and in wire format */
@@ -1053,7 +1055,7 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     EVP_SignUpdate(&ctx, AVAHI_DNS_PACKET_DATA(tmp) + AVAHI_DNS_PACKET_HEADER_SIZE, tmp->size - AVAHI_DNS_PACKET_HEADER_SIZE);
 
     /* now get the signature of the secure hash we just generated*/
-    EVP_SignFinal(&ctx, signature, &signature_length, private_key);
+/*    EVP_SignFinal(&ctx, signature, &signature_length, private_key); */
 
     avahi_free(tmp);
 
@@ -1063,6 +1065,6 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     return r;
 }
 
-AvahiRecord* avahi_get_local_trust_record(){
+/*AvahiRecord* avahi_get_local_trust_record(){
 
-}
+}*/

@@ -27,6 +27,7 @@
 
 #include <avahi-common/cdecl.h>
 #include <avahi-common/domain.h>
+#include <avahi-core/rr.h>
 
 AVAHI_C_DECL_BEGIN
 
@@ -54,11 +55,11 @@ unsigned char * avahi_uint32_to_canonical_string(uint32_t v);
 /** returns the number of labels in a canonical DNS domain */
 uint8_t avahi_count_canonical_labels(const char* input);
 
-/** returns keytag of a given DNSKEY record */
-uint16_t avahi_keytag(AvahiRecord r);
-
 /* reference keytag generator from RFC 4034 */
-uint16_t avahi_keytag(uint8_t key[], uint16_t keysize);
+uint16_t keytag(uint8_t key[], uint16_t keysize);
+
+/** returns keytag of a given DNSKEY record */
+uint16_t avahi_keytag(AvahiRecord* r);
 
 AVAHI_C_DECL_END
 

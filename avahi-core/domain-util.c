@@ -32,6 +32,8 @@
 #include <stdio.h>
 
 #include <avahi-common/malloc.h>
+#include <avahi-common/defs.h>
+#include <avahi-core/dns.h>
 
 #include "log.h"
 #include "domain-util.h"
@@ -193,7 +195,7 @@ unsigned char * avahi_c_to_canonical_string(const char* input)
     {
         char *label = avahi_malloc(AVAHI_LABEL_MAX);
         char *retval = avahi_malloc(AVAHI_DOMAIN_NAME_MAX);
-        char *result = retval;
+        unsigned char *result = retval;
 
         /* printf("invoked with: -%s-\n", input); */
 
@@ -273,11 +275,11 @@ uint16_t keytag(uint8_t key[], uint16_t keysize){
    }
 
 /*invoke with avahi_keytag(<RR>); */
-uint16_t avahi_keytag(AvahiRecord r){
+uint16_t avahi_keytag(AvahiRecord *r){
     uint16_t result;
-    AvahiDNSPacket *tmp;
+    AvahiDnsPacket *tmp;
 
-    if (r->key.type != AVAHI_DNS_TYPE_RRSIG)
+    if (r->key->type != AVAHI_DNS_TYPE_RRSIG)
         return NULL; /* invalid RRTYPE to generate keytag on */
 
     tmp = avahi_dns_packet_new_query(0); /* MTU */
@@ -288,7 +290,7 @@ uint16_t avahi_keytag(AvahiRecord r){
     }
 
     /* no TTL binding, leave record unaltered */
-    result = avahi_dns_packet_append_record(tmp, key, 0, 0);
+    result = avahi_dns_packet_append_record(tmp, r, 0, 0);
 
     if (!result) {
       avahi_log_error("appending of rdata failed.");
