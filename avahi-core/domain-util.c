@@ -224,6 +224,25 @@ unsigned char * avahi_c_to_canonical_string(const char* input)
        return retval;
     }
 
+unsigned char * avahi_uint16_to_canonical_string(uint16_t v) {
+    uint8_t *c = avahi_malloc(2);
+
+    c[0] = (uint8_t) (v >> 8);
+    c[1] = (uint8_t) v;
+    return c;
+}
+
+unsigned char * avahi_uint32_to_canonical_string(uint32_t v) {
+    uint8_t *c = avahi_malloc(4);
+
+    c[0] = (uint8_t) (v >> 24);
+    c[1] = (uint8_t) (v >> 16);
+    c[2] = (uint8_t) (v >> 8);
+    c[3] = (uint8_t) v;
+
+    return c;
+}
+
 uint8_t avahi_count_canonical_labels(const char* input){
     char *p;
     uint8_t count;
@@ -261,11 +280,11 @@ uint16_t avahi_keytag(AvahiRecord r){
     if (r->key.type != AVAHI_DNS_TYPE_RRSIG)
         return NULL; /* invalid RRTYPE to generate keytag on */
 
-    p = avahi_dns_packet_new_query(0); /* MTU */
+    tmp = avahi_dns_packet_new_query(0); /* MTU */
 
-    if (!p) { /*OOM check */
-      avahi_log_error("avahi_dns_packet_new_update() failed.");
-      assert(p);
+    if (!tmp) { /*OOM check */
+      avahi_log_error("avahi_dns_packet_new_query() failed.");
+      assert(tmp);
     }
 
     /* no TTL binding, leave record unaltered */
@@ -277,7 +296,7 @@ uint16_t avahi_keytag(AvahiRecord r){
     }
 
     /* update RRSET we modified */
-    avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ARCOUNT, 1);
+    avahi_dns_packet_set_field(tmp, AVAHI_DNS_FIELD_ARCOUNT, 1);
 
     /* finally, generate keytag */
     /* first arg is rdata address, second arg is rdlength */

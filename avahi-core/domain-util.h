@@ -45,6 +45,12 @@ int avahi_domain_ends_with(const char *domain, const char *suffix);
 /** returns canonical DNS representation of C string representing a domain */
 unsigned char * avahi_c_to_canonical_string(const char* input);
 
+/** returns canonical wire representation of uint16 */
+unsigned char * avahi_uint16_to_canonical_string(uint16_t v);
+
+/** returns canonical wire representation of uint32 */
+unsigned char * avahi_uint32_to_canonical_string(uint32_t v);
+
 /** returns the number of labels in a canonical DNS domain */
 uint8_t avahi_count_canonical_labels(const char* input);
 

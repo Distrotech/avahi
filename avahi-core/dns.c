@@ -907,12 +907,13 @@ size_t avahi_rdata_serialize(AvahiRecord *record, void *rdata, size_t max_size) 
 }
 
 /* TODO: should this be located in this file? */
-/* r = avahi_get_local_zsk_pubkey("riker.local", <ttl>) */
-AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t ttl){
+/* r = avahi_get_local_zsk_pubkey(<ttl>) */
+AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl){
 
     AvahiRecord *r;
 
-    r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_DNSKEY, 0);
+    /* TODO: in merged version into upstream, authority  needs to be an external configurable pulled from config file */
+    r = avahi_record_new_full("riker.local", AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_DNSKEY, 0);
 
     if (!r) { /* OOM check */
        avahi_log_error("avahi_record_new_full() failed.");
@@ -925,7 +926,7 @@ AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t t
 
     r->data.dnskey.protocol = AVAHI_DNSSEC_PROTO; /* used for "compatibility" with KEY record */
 
-    /* TODO: in merged version into upstream, key needs to be an external configurable pulled from /etc */
+    /* TODO: in merged version into upstream, key, algorithm need to be external configurables pulled from config file */
     /* in the prototype, we just statically configure */
 
     r->data.dnskey.algorithm = AVAHI_DNSSEC_KEY_SHA1; /* SHA1 is mandatory in the spec, but others do exist */
@@ -938,12 +939,20 @@ AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t t
     return r;
 }
 
-/* invoke as avahi_dnssec_sign_record(<record>, "reiker.local", <ttl>) */
-AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, const char *authority, uint32_t ttl){
+/* invoke as avahi_dnssec_sign_record(<record>, <ttl>) */
+AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     AvahiRecord *r;
 
     AvahiRecord *key;
     int result;
+
+    char *canonic; /*used in conversions */
+    AvahiDNSPacket *tmp;
+
+    unsigned char signature[EVP_MAX_MD_SIZE]; /*used for signing */
+    HMAC_CTX ctx;
+    unsigned signature_length;
+
 
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_RRSIG, 0);
 
@@ -953,7 +962,7 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, const char *authority, uint
     }
 
     /* type of covered record */
-    r->data.rrsig.type_covered = s->key.clazz;
+    r->data.rrsig.type_covered = s->key.type;
 
     /* SHA1 is mandatory in the spec (MUST), but other options are available */
     r->data.rrsig.algorithm = AVAHI_DNSSEC_KEY_SHA1;
@@ -971,15 +980,85 @@ AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, const char *authority, uint
     r->data.rrsig.signature_inception = time(NULL) - AVAHI_DNSSEC_TIME_DRIFT;
 
     /* retrieve RRSIG record representing localhost's trust */
-    key = avahi_get_local_zsk_pubkey(authority, ttl);
+    key = avahi_get_local_zsk_pubkey(ttl);
 
-    /* generate keytag of the localhos's pubkey */
+    /* generate keytag of the localhost's pubkey */
     r->data.rrsig.keytag = avahi_keytag(key);
+
+    /* <localhost>+".local", to be retrieved from future *private* crypto config file along with local ZSK keypair */
+    r->data.rrsig.signers_name = avahi_strdup (key->key->name);
 
     avahi_free(key);
 
-    /* <localhost>+".local", to be retrieved from future *private* crypto config file along with local ZSK keypair */
-    r->data.rrsig.signers_name = avahi_strdup (authority);
+    /* now the signature proper */
+
+    switch (r->data.dnskey.algorithm){
+
+    case AVAHI_DNSSEC_KEY_SHA1   :   EVP_SigInit(&ctx, EVP_sha1());
+                                   break;  /* RSA SHA1 is only mandatory in the spec, others exist */
+
+    default:   avahi_log_error("Unknown algorithm requested from avahi_dnssec_sign_record()");
+               return NULL;
+    }
+
+    /* generate HASH for signing */
+
+    /*from the RRSIG itself first */
+
+    /* type of RR covered by signature */
+    EVP_SignUpdate(&ctx, avahi_uint16_to_canonical_string(r->data.rrsig.type_covered), 2);
+
+    /* algorithm */
+    EVP_SignUpdate(&ctx, &r->data.rrsig.algorithm, 1);
+
+    /* labels count */
+    EVP_SignUpdate(&ctx, &r->data.rrsig.labels, 1);
+
+    /* original TTL */
+    EVP_SignUpdate(&ctx, avahi_uint32_to_canonical_string(r->data.rrsig.original_ttl), 4);
+
+    /* signature expiration */
+    EVP_SignUpdate(&ctx, avahi_uint32_to_canonical_string(r->data.rrsig.signature_expiration), 4);
+
+    /* signature inception */
+    EVP_SignUpdate(&ctx, avahi_uint32_to_canonical_string(r->data.rrsig.signature_inception), 4);
+
+    /* type of RR covered by signature */
+    EVP_SignUpdate(&ctx, avahi_uint16_to_canonical_string(r->data.rrsig.key_tag), 2);
+
+    /* authority */
+    canonic = avahi_c_to_canonical_string(r->data->signers_name); /* signer's name in canonical wire format (DNS labels) */
+    EVP_SignUpdate(&ctx, canonic, strlen(canonic) +1);
+
+    /* now the DNS record that we are signing, complete and in wire format */
+    tmp = avahi_dns_packet_new_query(0); /* MTU */
+
+    if (!tmp) { /*OOM check */
+      avahi_log_error("avahi_dns_packet_new_query() failed.");
+      assert(tmp);
+    }
+
+    /* no TTL binding, leave record unaltered */
+    result = avahi_dns_packet_append_record(tmp, s, 0, 0);
+
+    if (!result) {
+      avahi_log_error("appending of rdata failed.");
+      assert(result);
+    }
+
+    /* update RRSET we modified - RRSET is arbitrary in this case */
+    avahi_dns_packet_set_field(tmp, AVAHI_DNS_FIELD_ARCOUNT, 1);
+
+    /* now select the right chunk of the packet to get the wire format of the record's RDATA */
+    EVP_SignUpdate(&ctx, AVAHI_DNS_PACKET_DATA(tmp) + AVAHI_DNS_PACKET_HEADER_SIZE, tmp->size - AVAHI_DNS_PACKET_HEADER_SIZE);
+
+    /* now get the signature of the secure hash we just generated*/
+    EVP_SignFinal(&ctx, signature, &signature_length, private_key);
+
+    avahi_free(tmp);
+
+    /*finally, add the signature to the record */
+    r->data.rrsig.signature = avahi_strndup(signature, signature_length);
 
     return r;
 }
