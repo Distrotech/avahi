@@ -53,9 +53,7 @@ enum {
 
 enum {
     AVAHI_DNSSEC_PROTO = 0x3,
-    AVAHI_DNSSEC_VALIDITY = 30,
-    AVAHI_DNSSEC_TIME_DRIFT = 3600,
-    AVAHI_DNSSEC_SHA1_KEYLENGTH = 89
+    AVAHI_DNSSEC_TIME_DRIFT = 3600
 };
 
 /** DNS record classes, see RFC 1035, in addition to those defined in defs.h */

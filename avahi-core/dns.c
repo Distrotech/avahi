@@ -768,7 +768,7 @@ static int append_rdata(AvahiDnsPacket *p, AvahiRecord *r) {
 
             break;
 
-            case AVAHI_DNS_TYPE_RRSIG:
+        case AVAHI_DNS_TYPE_RRSIG:
 
             if (!avahi_dns_packet_append_uint16(p, r->data.rrsig.type_covered))
                 return -1;
@@ -914,9 +914,9 @@ AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t t
 
     r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_DNSKEY, 0);
 
-    if (!r) {
-      avahi_log_error("avahi_record_new_full() failed.");
-        return NULL;
+    if (!r) { /* OOM check */
+       avahi_log_error("avahi_record_new_full() failed.");
+       return NULL;
     }
 
     r->ttl = ttl;   /* TTL of records associated with a signature MUST match the record's */
@@ -936,4 +936,54 @@ AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t t
     /* TODO: explain unexpected gratuitous whitspace in dnssec-keygen output? */
 
     return r;
+}
+
+/* invoke as avahi_dnssec_sign_record(<record>, "reiker.local", <ttl>) */
+AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, const char *authority, uint32_t ttl){
+    AvahiRecord *r;
+
+    AvahiRecord *key;
+    int result;
+
+    r = avahi_record_new_full(keyname, AVAHI_DNS_CLASS_IN, AVAHI_DNS_TYPE_RRSIG, 0);
+
+    if (!r) { /* OOM check */
+       avahi_log_error("avahi_record_new_full() failed.");
+       return NULL;
+    }
+
+    /* type of covered record */
+    r->data.rrsig.type_covered = s->key.clazz;
+
+    /* SHA1 is mandatory in the spec (MUST), but other options are available */
+    r->data.rrsig.algorithm = AVAHI_DNSSEC_KEY_SHA1;
+
+    /* label count */
+    r->data.rrsig.labels = avahi_count_canonical_labels(avahi_c_to_canonical_string(s->key.name));
+
+    /* original ttl */
+    r->data.rrsig.ttl = ttl); /*this could  be invalidated if TTL capping is later used in the packet dispatching call */
+
+    /* signature validity - ttl seconds from now is reasonable*/
+    r->data.rrsig.signature_expiration = time(NULL) + ttl;
+
+    /* when was the record signed? to allow for badly sync'd clocks, one conventionally claims signing 1 hour in the past */
+    r->data.rrsig.signature_inception = time(NULL) - AVAHI_DNSSEC_TIME_DRIFT;
+
+    /* retrieve RRSIG record representing localhost's trust */
+    key = avahi_get_local_zsk_pubkey(authority, ttl);
+
+    /* generate keytag of the localhos's pubkey */
+    r->data.rrsig.keytag = avahi_keytag(key);
+
+    avahi_free(key);
+
+    /* <localhost>+".local", to be retrieved from future *private* crypto config file along with local ZSK keypair */
+    r->data.rrsig.signers_name = avahi_strdup (authority);
+
+    return r;
+}
+
+AvahiRecord* avahi_get_local_trust_record(){
+
 }

@@ -80,6 +80,9 @@ int avahi_dns_packet_is_empty(AvahiDnsPacket *p);
 size_t avahi_dns_packet_space(AvahiDnsPacket *p);
 
 AvahiRecord* avahi_get_local_zsk_pubkey(const unsigned char* keyname, uint32_t ttl);
+AvahiRecord avahi_dnssec_sign_record(AvahiRecord *s, const char *authority, uint32_t ttl);
+AvahiRecord* avahi_get_local_trust_record();
+
 
 #define AVAHI_DNS_FIELD_ID 0
 #define AVAHI_DNS_FIELD_FLAGS 1

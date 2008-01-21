@@ -281,7 +281,7 @@ uint16_t avahi_keytag(AvahiRecord r){
 
     /* finally, generate keytag */
     /* first arg is rdata address, second arg is rdlength */
-    result = keytag(AVAHI_DNS_PACKET_DATA(tmp), sizeof(uint16_t) + 2*sizeof(uint8_t) + AVAHI_DNSSEC_SHA1_KEYLENGTH);
+    result = keytag(AVAHI_DNS_PACKET_DATA(tmp) + AVAHI_DNS_PACKET_HEADER_SIZE, tmp->size - AVAHI_DNS_PACKET_HEADER_SIZE);
 
     avahi_free(tmp);
 
