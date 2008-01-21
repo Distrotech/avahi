@@ -759,7 +759,7 @@ AvahiRecord* avahi_tsig_sign_packet(const unsigned char* keyname, const unsigned
                                    HMAC_Init(&ctx, key, keylength, EVP_sha256());
                                    break;
 
-    default:   avahi_log_error("Invalid algorithm requested from tsig_sign_packet()");
+    default:   avahi_log_error("Invalid algorithm requested from avahi_tsig_sign_packet()");
                return NULL;
     }
 
