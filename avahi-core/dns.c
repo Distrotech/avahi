@@ -934,9 +934,11 @@ AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl){
     r->data.dnskey.algorithm = AVAHI_DNSSEC_KEY_SHA1; /* SHA1 is mandatory in the spec, but others do exist */
 
     /* statically using key 62051 which has 512b length */
-    /* 512b ZSK pubkey in base64 encoding */
-    r->data.dnskey.public_key = avahi_strndup("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF", strlen("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF"));
-    /* TODO: explain unexpected gratuitous whitspace in dnssec-keygen output? */
+    /* 512b ZSK pubkey in base64 encoding (62051)  */
+    r->data.dnskey.public_key = avahi_strndup(
+    "AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS 3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF",
+    strlen("AQO/7WDOTMzPbRAEVbwYttMZztSn+exNoeNTsPqNXb6dtNqpRIdzwgfS 3kBtaBtqiOGyJjts7qjXbQRX/QvvFuFF"));
+    /* whitspace in dnssec-keygen output at regular index - unexplained but valid base64 enoding */
 
     return r;
 }
@@ -1055,7 +1057,7 @@ AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
     EVP_SignUpdate(&ctx, AVAHI_DNS_PACKET_DATA(tmp) + AVAHI_DNS_PACKET_HEADER_SIZE, tmp->size - AVAHI_DNS_PACKET_HEADER_SIZE);
 
     /* now get the signature of the secure hash we just generated*/
-/*    EVP_SignFinal(&ctx, signature, &signature_length, private_key); */
+    EVP_SignFinal(&ctx, signature, &signature_length, private_key);
 
     avahi_free(tmp);
 
