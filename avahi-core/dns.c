@@ -943,8 +943,8 @@ AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl){
     return r;
 }
 
-/* invoke as avahi_dnssec_sign_record(<record>, <ttl>) */
-AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
+/* invoke as avahi_dnssec_sign_record(<record>, <ttl>, <private key>) */
+AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl, EVP_PKEY private_key){
     AvahiRecord *r;
 
     AvahiRecord *key;
@@ -1066,7 +1066,3 @@ AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl){
 
     return r;
 }
-
-/*AvahiRecord* avahi_get_local_trust_record(){
-
-}*/
