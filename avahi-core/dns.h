@@ -25,6 +25,8 @@
 #include "rr.h"
 #include "hashmap.h"
 
+#include <openssl/evp.h>
+
 #define AVAHI_DNS_PACKET_HEADER_SIZE 12
 #define AVAHI_DNS_PACKET_EXTRA_SIZE 48
 #define AVAHI_DNS_LABELS_MAX 127
@@ -80,7 +82,7 @@ int avahi_dns_packet_is_empty(AvahiDnsPacket *p);
 size_t avahi_dns_packet_space(AvahiDnsPacket *p);
 
 AvahiRecord* avahi_get_local_zsk_pubkey(uint32_t ttl);
-AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl, EVP_PKEY private_key);
+AvahiRecord* avahi_dnssec_sign_record(AvahiRecord *s, uint32_t ttl, EVP_PKEY *private_key);
 /*AvahiRecord* avahi_get_local_trust_record();*/
 
 
