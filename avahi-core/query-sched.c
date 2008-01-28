@@ -28,6 +28,8 @@
 #include <avahi-common/timeval.h>
 #include <avahi-common/malloc.h>
 
+#include <openssl/evp.h>
+
 #include "query-sched.h"
 #include "log.h"
 
@@ -232,6 +234,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
     unsigned n;
 
     FILE fp;  /* used to load the private keys */
+    EVP_PKEY *private_key; /* key used in signing */
 
     assert(s);
     assert(p);
