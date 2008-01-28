@@ -234,7 +234,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
     unsigned n;
     char result;
 
-    FILE fp;  /* used to load the private keys */
+    FILE *fp;  /* used to load the private keys */
     EVP_PKEY *private_key; /* key used in signing */
     AvahiRecord *r; /* used to handle records */
 
@@ -267,6 +267,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
 
             /* generate an AvahiRecord with the Public Key of the ZSK that the host uses to sign records */
             r = avahi_get_local_zsk_pubkey(ka->record->ttl);
+            printf("appended to record type %d named %s at entrypoint\n", ka->record->key->type, ka->record->key->name);
 
             /*append the public key record */
             result = avahi_dns_packet_append_record(p, r, 0, 0);
