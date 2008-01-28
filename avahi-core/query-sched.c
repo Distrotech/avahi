@@ -237,6 +237,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
     FILE *fp;  /* used to load the private keys */
     EVP_PKEY *private_key; /* key used in signing */
     AvahiRecord *r; /* used to handle records */
+    AvahiRecord *s; /* used to handle signatures */
 
     assert(s);
     assert(p);
@@ -269,7 +270,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
             r = avahi_get_local_zsk_pubkey(ka->record->ttl);
             printf("appended to record type %d named %s at entrypoint\n", ka->record->key->type, ka->record->key->name);
 
-            /*append the public key record */
+            /*append the public key record DNSKEY RR */
             result = avahi_dns_packet_append_record(p, r, 0, 0);
 
             if (!result) {
@@ -291,6 +292,19 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
             }
 
             fclose(fp);
+
+            /* generate RRSIG record for transitive trust */
+            s = avahi_dnssec_sign_record(r, ka->record->ttl, private_key)
+
+            /*append the transitive trust record RRSIG RR */
+            result = avahi_dns_packet_append_record(p, s, 0, 0);
+
+            if (!result) {
+                avahi_log_error("appending of rdata failed.");
+                assert(result);
+            }
+
+            avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ARCOUNT, 2); /*increment record count for ARCOUNT */
 
             avahi_interface_send_packet(s->interface, p);
             avahi_dns_packet_free(p);
