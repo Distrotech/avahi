@@ -234,6 +234,9 @@ static void elapse_callback(AVAHI_GCC_UNUSED AvahiTimeEvent *e, void* data) {
     if (!(p = avahi_dns_packet_new_query(s->interface->hardware->mtu)))
         return; /* OOM */
     n = 1;
+
+    printf("appended to record type %d named %s at entrypoint(c)\n", ka->record->key->type, ka->record->key->name);
+
     
     /* Add the import probe */
     if (!packet_add_probe_query(s, p, pj)) {

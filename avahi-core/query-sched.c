@@ -243,7 +243,9 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
     assert(p);
 
     n = 0;
-    
+
+    printf("appended to record type %d named %s at entrypoint(a)\n", ka->record->key->type, ka->record->key->name);
+
     while ((ka = s->known_answers)) {
         int too_large = 0;
 
@@ -268,7 +270,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
 
             /* generate an AvahiRecord with the Public Key of the ZSK that the host uses to sign records */
             r = avahi_get_local_zsk_pubkey(ka->record->ttl);
-            printf("appended to record type %d named %s at entrypoint\n", ka->record->key->type, ka->record->key->name);
+            printf("appended to record type %d named %s at entrypoint(b)\n", ka->record->key->type, ka->record->key->name);
 
             /*append the public key record DNSKEY RR */
             result = avahi_dns_packet_append_record(p, r, 0, 0);
