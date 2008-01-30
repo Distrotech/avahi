@@ -295,7 +295,7 @@ enum {
 
 /** DNS record classes, see RFC 1035 */
 enum {
-    AVAHI_DNS_CLASS_IN = 0x01,          /**< Probably the only class we will ever use */
+    AVAHI_DNS_CLASS_IN = 0x01          /**< Probably the only class we will ever use */
 };
 
 /** The default TTL for RRs which contain a host name of some kind. */

@@ -235,7 +235,7 @@ static void elapse_callback(AVAHI_GCC_UNUSED AvahiTimeEvent *e, void* data) {
         return; /* OOM */
     n = 1;
 
-    printf("appended to record type %d named %s at entrypoint(c)\n", ka->record->key->type, ka->record->key->name);
+    printf("appended to record type %d named %s at entrypoint(c)\n", pj->record->key->type, pj->record->key->name);
 
     
     /* Add the import probe */

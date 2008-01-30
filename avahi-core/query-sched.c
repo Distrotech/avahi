@@ -29,6 +29,7 @@
 #include <avahi-common/malloc.h>
 
 #include <openssl/evp.h>
+#include <openssl/pem.h>
 
 #include "query-sched.h"
 #include "log.h"
@@ -237,7 +238,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
     FILE *fp;  /* used to load the private keys */
     EVP_PKEY *private_key; /* key used in signing */
     AvahiRecord *r; /* used to handle records */
-    AvahiRecord *s; /* used to handle signatures */
+    AvahiRecord *rs; /* used to handle signatures */
 
     assert(s);
     assert(p);
@@ -296,10 +297,10 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
             fclose(fp);
 
             /* generate RRSIG record for transitive trust */
-            s = avahi_dnssec_sign_record(r, ka->record->ttl, private_key)
+            rs = avahi_dnssec_sign_record(r, ka->record->ttl, private_key);
 
             /*append the transitive trust record RRSIG RR */
-            result = avahi_dns_packet_append_record(p, s, 0, 0);
+            result = avahi_dns_packet_append_record(p, rs, 0, 0);
 
             if (!result) {
                 avahi_log_error("appending of rdata failed.");
