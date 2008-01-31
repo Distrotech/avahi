@@ -236,7 +236,6 @@ static void elapse_callback(AVAHI_GCC_UNUSED AvahiTimeEvent *e, void* data) {
     n = 1;
 
     /* printf("traced record type %d named %s at entrypoint(c)\n", pj->record->key->type, pj->record->key->name); */
-
     
     /* Add the import probe */
     if (!packet_add_probe_query(s, p, pj)) {

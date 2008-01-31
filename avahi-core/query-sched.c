@@ -266,6 +266,32 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
             avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ANCOUNT, n);
 
             /* append signature */
+            /*TODO: file location and naming policy to be revised with project maintainer */
+            /*  get the local private zsk */
+            if(!(fp = fopen("/etc/avahi/62051.pem","r"))) {
+                avahi_log_error("private key file open failed.");
+                assert(fp);
+            }
+
+            if(!(private_key = PEM_read_PrivateKey(fp, NULL, NULL, "secret"))) {
+                avahi_log_error("private key read failed.");
+                assert(fp);
+            }
+
+            fclose(fp);
+
+            /* generate RRSIG record for given resource record */
+            rs = avahi_dnssec_sign_record(ka->record, ka->record->ttl, private_key);
+
+            /*append the signature RRSIG RR */
+            result = avahi_dns_packet_append_record(p, rs, 0, 0);
+
+            if (!result) {
+                avahi_log_error("appending of rdata failed.");
+                assert(result);
+            }
+
+            avahi_dns_packet_set_field(p, AVAHI_DNS_FIELD_ANCOUNT, n+1); /*increment record count for ANCOUNT */
 
             /* append trust record */
 
