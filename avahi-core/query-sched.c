@@ -245,6 +245,7 @@ static void append_known_answers_and_send(AvahiQueryScheduler *s, AvahiDnsPacket
 
     n = 0;
 
+printf("ping\n");
     /* printf("tracing record type %d named %s at entrypoint(a)\n", ka->record->key->type, ka->record->key->name); */
 
     while ((ka = s->known_answers)) {
