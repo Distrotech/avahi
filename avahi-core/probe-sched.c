@@ -235,7 +235,7 @@ static void elapse_callback(AVAHI_GCC_UNUSED AvahiTimeEvent *e, void* data) {
         return; /* OOM */
     n = 1;
 
-    printf("traced record type %d named %s at entrypoint(c)\n", pj->record->key->type, pj->record->key->name);
+    /* printf("traced record type %d named %s at entrypoint(c)\n", pj->record->key->type, pj->record->key->name); */
 
     
     /* Add the import probe */
@@ -260,7 +260,7 @@ static void elapse_callback(AVAHI_GCC_UNUSED AvahiTimeEvent *e, void* data) {
             avahi_dns_packet_free(p);
             return;  /* OOM */
         }
-        
+
         b = avahi_dns_packet_append_key(p, k, 0) && avahi_dns_packet_append_record(p, pj->record, 0, 0);
         avahi_key_unref(k);
 
