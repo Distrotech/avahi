@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#CLEARFLAGS=1
+
+export PYTHONHOME=/build/${5}/usr
+export PYTHON=/build/${5}/usr/bin/python2.7
+export PYTHONPATH=/build/${5}/usr/${B_LIBDIRS}/gobject-introspection
+
+CWD=$( pwd )
+
+make ${MAKE_J} V=1 INTROSPECTION_SCANNER=/build/${5}/usr/bin/g-ir-scanner || \
+  chroot /build/${5} make -C ${CWD} V=1 ${MAKE_J} || exit 1
+make DESTDIR=${3} install
