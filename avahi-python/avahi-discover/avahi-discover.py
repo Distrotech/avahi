@@ -1,4 +1,4 @@
-#!@PYTHON@
+#!/usr/bin/python
 # -*-python-*-
 # This file is part of avahi.
 #
